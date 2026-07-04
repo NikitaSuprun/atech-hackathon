@@ -1,10 +1,7 @@
 #include "audio_director.h"
+#include "pong_shared.h"
 
-// Local mirrors of pong_config.h flags — that header is screen-side only
-// (pulls in pong_frame.h) and is not symlinked into this module.
 namespace {
-constexpr bool WALL_BLIP_ENABLED   = true;
-constexpr bool RALLY_PULSE_ENABLED = false;
 
 // suppression windows sized to each motif/jingle (isPlaying() alone misses
 // queued playNote chains and the gaps between RTTTL notes)

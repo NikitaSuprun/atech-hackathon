@@ -21,7 +21,7 @@ run_stage() {
 
 note "symlinks"
 sym_fail=0
-for f in pong_proto.h pong_link.h net_config.h; do
+for f in pong_proto.h pong_link.h net_config.h pong_shared.h; do
   p="modules/pong_control/$f"
   if t=$(readlink -f "$p" 2>/dev/null) && [ -r "$t" ]; then
     echo "ok: $p -> $t"

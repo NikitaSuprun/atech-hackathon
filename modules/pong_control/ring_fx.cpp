@@ -1,12 +1,8 @@
 #include "ring_fx.h"
+#include "pong_shared.h"
 #include <math.h>
 
 namespace {
-
-// mirrors of RING_BRIGHT_* in modules/pong_screen/pong_config.h (screen-board
-// file, not visible to this module's build) — keep values in sync
-constexpr uint8_t RING_BRIGHT_GAME = 40;
-constexpr uint8_t RING_BRIGHT_MAX  = 120;
 
 // per-ring one-shot effect kinds (goalFxKind_)
 constexpr uint8_t FX_NONE    = 0;
@@ -15,9 +11,6 @@ constexpr uint8_t FX_CONCEDE = 2;   // 3x 200 ms red flashes (on/off pairs)
 constexpr uint8_t FX_SWEEP   = 3;   // scorer "+1" full sweep landing on new dial pos
 
 constexpr uint32_t FX_DUR[4] = {0, 150, 1200, 300};
-
-// P1 cyan / P2 amber (matches COL_P1/COL_P2 on the screen board)
-constexpr uint8_t PLAYER_RGB[2][3] = {{0, 200, 255}, {255, 120, 0}};
 
 // every animation period (blink 1000, breathe 2000, rotate 4000, spin 500)
 // divides this, so the clock wraps phase-continuously and stays float-safe
@@ -66,7 +59,8 @@ void RingFX::apply(const PongFeedbackPacket& snap, const PongCues& cues,
     if (cues.serve) served_ = true;
 
     for (int i = 0; i < 2; ++i) {
-        uint8_t r = PLAYER_RGB[i][0], g = PLAYER_RGB[i][1], b = PLAYER_RGB[i][2];
+        const pong::Color pc = (i == 0) ? COL_P1 : COL_P2;
+        uint8_t r = pc.r, g = pc.g, b = pc.b;
         uint8_t bright = 0;
         float pos = 0.0f;
 

@@ -58,8 +58,6 @@ constexpr int   ATTRACT_FORCE_MISS_EVERY = 3;     // defender whiffs every Nth r
 // PWM = value/5, so anything < ~25 quantizes to mud. Two tiers only:
 // accents (saturated, >= 200) and dims (70-90). Dim = dim PALETTE ENTRY, never
 // setBrightness (that would dim the ball too).
-constexpr pong::Color COL_P1     = {0, 200, 255};   // cyan, defends bottom (y = H-1)
-constexpr pong::Color COL_P2     = {255, 120, 0};   // amber, defends top (y = 0)
 constexpr pong::Color COL_BALL   = {255, 255, 255};
 constexpr pong::Color COL_NET    = {70, 70, 70};    // dots at mid-field, cols 1 & 4
 constexpr pong::Color COL_LOSE   = {255, 0, 0};
@@ -105,15 +103,8 @@ constexpr TileCfg TILE_MAP[NUM_TILES] = {
     {5, 1, 0},  // port 14 (hosted by the pong_screen module itself)
 };
 
-// ---------------- rings ----------------
-constexpr uint8_t RING_BRIGHT_GAME    = 40;
-constexpr uint8_t RING_BRIGHT_ATTRACT = 20;
-constexpr uint8_t RING_BRIGHT_MAX     = 120;      // rings sit at eye level
-
 // ---------------- feature flags ----------------
 constexpr bool NET_DOTS              = false;     // user: no dots mid-field
-constexpr bool WALL_BLIP_ENABLED     = true;      // wall-bounce audio blip
-constexpr bool RALLY_PULSE_ENABLED   = false;     // heartbeat bg "music" (off by default)
 constexpr bool ATTRACT_CHIRP_ENABLED = false;
 constexpr bool SPEED_TINT_BALL       = false;     // polish: white -> warm as speed rises
 
