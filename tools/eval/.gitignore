@@ -1,0 +1,3 @@
+# regenerable render assets + manifest; baseline/ is the committed regression reference
+out/
+.ruff_cache/

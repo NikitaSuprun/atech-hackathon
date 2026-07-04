@@ -1,0 +1,7 @@
+# Inherit every rule from the repo root, then drop S603 for this directory only:
+# the harness's whole job is driving trusted local subprocesses (make + our own
+# freshly-built game hosts), so the subprocess-audit warning is pure noise here.
+extend = "../../pyproject.toml"
+
+[lint]
+extend-ignore = ["S603"]
