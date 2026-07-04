@@ -1,0 +1,308 @@
+<title>Atech Arcade — Brand Directions</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#08080a;
+    --panel:#101014;
+    --ink:#ececef;
+    --muted:#8a8b95;
+    --line:rgba(255,255,255,.09);
+    --font-ui: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono: ui-monospace,"SF Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
+    --font-serif: Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #131320 0%, rgba(19,19,32,0) 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    padding:clamp(20px,4vw,56px);
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+
+  /* ---- header ---- */
+  .eyebrow{
+    font-family:var(--font-mono);
+    font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--muted);display:flex;align-items:center;gap:.7em;margin:0 0 18px;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:linear-gradient(90deg,#5b6cff,transparent)}
+  h1{
+    font-size:clamp(2.1rem,6vw,3.4rem);line-height:1.02;letter-spacing:-.02em;
+    margin:0 0 .5em;font-weight:640;text-wrap:balance;
+  }
+  h1 em{font-style:normal;color:#c9ccd6}
+  .lead{max-width:64ch;color:#b9bac4;font-size:1.02rem;margin:0}
+  .lead b{color:var(--ink);font-weight:600}
+
+  .rule{height:1px;background:var(--line);margin:34px 0 30px}
+
+  /* ---- grid of directions ---- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media (max-width:920px){.grid{grid-template-columns:1fr;max-width:440px;margin:0 auto}}
+
+  .card{
+    --ground:#111;--cink:#eee;--cmut:#999;--accent:#fff;--accent2:#fff;--wordfont:var(--font-ui);
+    background:
+      radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 9%, var(--ground)) 0%, var(--ground) 55%);
+    border:1px solid var(--line);border-radius:18px;
+    padding:16px 16px 20px;display:flex;flex-direction:column;gap:15px;
+    box-shadow:0 24px 60px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .dir-a{--ground:#16100a;--cink:#f6e9d6;--cmut:#caa97e;--accent:#ffb23e;--accent2:#ff6a3d;--wordfont:var(--font-serif)}
+  .dir-b{--ground:#0b0221;--cink:#ece6ff;--cmut:#9e86d6;--accent:#05d9e8;--accent2:#ff2e97;--wordfont:var(--font-mono)}
+  .dir-c{--ground:#0c0d0f;--cink:#f4f5f7;--cmut:#888b95;--accent:#c7ff4d;--accent2:#ffffff;--wordfont:var(--font-ui)}
+
+  /* ---- the physical panel ---- */
+  .screen{
+    position:relative;background:#050506;border-radius:13px;
+    border:1px solid rgba(255,255,255,.06);
+    padding:16px 16px 26px;display:grid;place-items:center;
+    box-shadow:inset 0 2px 14px rgba(0,0,0,.7), inset 0 0 0 6px #0a0a0c;
+  }
+  .screen canvas{display:block;height:352px;width:auto;border-radius:3px}
+  .bezel-label{
+    position:absolute;bottom:8px;left:0;right:0;text-align:center;
+    font-family:var(--font-mono);font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;
+    color:rgba(255,255,255,.32);
+  }
+
+  /* ---- body ---- */
+  .tagrow{display:flex;align-items:baseline;gap:11px}
+  .tag{
+    font-family:var(--font-mono);font-size:.78rem;font-weight:600;
+    color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+    border-radius:7px;padding:2px 9px;line-height:1.35;
+  }
+  .name{font-size:1.12rem;font-weight:600;color:var(--cink);margin:0;letter-spacing:-.01em}
+  .thesis{margin:0;color:var(--cmut);font-size:.9rem;line-height:1.5}
+
+  .wordmark{
+    font-family:var(--wordfont);font-size:1.35rem;letter-spacing:.02em;color:var(--accent);
+    text-shadow:0 0 22px color-mix(in srgb,var(--accent) 55%,transparent),0 0 5px color-mix(in srgb,var(--accent) 70%,transparent);
+    padding:2px 0;
+  }
+  .wordmark b{font-weight:700;color:var(--accent)}
+  .dir-b .wordmark{letter-spacing:.14em;font-size:1.12rem;text-transform:uppercase}
+  .dir-c .wordmark{letter-spacing:.1em;font-size:1.16rem;text-transform:uppercase;font-weight:700;color:var(--cink);text-shadow:0 0 18px rgba(255,255,255,.25)}
+  .dir-c .wordmark b{color:var(--accent);text-shadow:0 0 16px color-mix(in srgb,var(--accent) 70%,transparent)}
+
+  .swatches{display:flex;gap:9px;flex-wrap:wrap}
+  .sw{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+  .chip{width:34px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.14)}
+  .hex{font-family:var(--font-mono);font-size:.58rem;color:var(--cmut);letter-spacing:.03em}
+
+  .typesample{
+    font-family:var(--font-mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+    color:color-mix(in srgb,var(--accent2) 78%, #fff 0%);opacity:.82;
+    border-top:1px dashed var(--line);padding-top:12px;
+  }
+  .feels{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cmut)}
+  .feels b{color:var(--accent);font-weight:600}
+
+  /* ---- footer ---- */
+  footer{margin-top:34px;border-top:1px solid var(--line);padding-top:20px;
+    color:var(--muted);font-size:.9rem;max-width:70ch}
+  footer .k{font-family:var(--font-mono);color:#cdd0da;background:rgba(255,255,255,.06);
+    padding:1px 7px;border-radius:6px;font-size:.82em}
+  footer strong{color:var(--ink);font-weight:600}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Atech Arcade · brand direction</p>
+  <h1>Pick the glow.</h1>
+  <p class="lead">Three ways to dress the same console. The <b>games</b> can nod to the Soviet handhelds you grew up with — the <b>look</b> stays modern-retro: soft, blooming pixels that ease on and decay smooth. One light-engine, three moods. These panels are running the <b>real</b> 6×18 renderer you'll ship, not a mockup — watch them, then tell me <b>A</b>, <b>B</b>, or <b>C</b> (or a mix) and I'll build the full brand guide, logo, and product renders around it.</p>
+
+  <div class="rule"></div>
+
+  <div class="grid">
+    <!-- A -->
+    <article class="card dir-a">
+      <div class="screen"><canvas id="mtx-a" width="120" height="352"></canvas><span class="bezel-label">6 × 18 · live light-engine</span></div>
+      <div class="tagrow"><span class="tag">A</span><h2 class="name">Warm Analog</h2></div>
+      <p class="thesis">Incandescent amber, like a coin-op cabinet warming up at night. Cozy, premium, the kind of pixel you leave glowing on a shelf.</p>
+      <div class="wordmark">Atech <b>Arcade</b></div>
+      <div class="swatches">
+        <div class="sw"><span class="chip" style="background:#ffb23e"></span><span class="hex">#FFB23E</span></div>
+        <div class="sw"><span class="chip" style="background:#ff6a3d"></span><span class="hex">#FF6A3D</span></div>
+        <div class="sw"><span class="chip" style="background:#ffdfa6"></span><span class="hex">#FFDFA6</span></div>
+        <div class="sw"><span class="chip" style="background:#16100a"></span><span class="hex">#16100A</span></div>
+      </div>
+      <div class="typesample">Georgia display · mono data — hi-score 09990 · 1up</div>
+      <div class="feels">feels like — <b>premium desk-object</b></div>
+    </article>
+
+    <!-- B -->
+    <article class="card dir-b">
+      <div class="screen"><canvas id="mtx-b" width="120" height="352"></canvas><span class="bezel-label">6 × 18 · live light-engine</span></div>
+      <div class="tagrow"><span class="tag">B</span><h2 class="name">Neon Coin-op</h2></div>
+      <p class="thesis">Cyan-and-magenta CRT energy, bloomed soft instead of harsh. Unmistakably arcade, unmistakably now — the crowd-magnet on a demo floor.</p>
+      <div class="wordmark">Atech <b>Arcade</b></div>
+      <div class="swatches">
+        <div class="sw"><span class="chip" style="background:#05d9e8"></span><span class="hex">#05D9E8</span></div>
+        <div class="sw"><span class="chip" style="background:#ff2e97"></span><span class="hex">#FF2E97</span></div>
+        <div class="sw"><span class="chip" style="background:#7b2ff7"></span><span class="hex">#7B2FF7</span></div>
+        <div class="sw"><span class="chip" style="background:#0b0221"></span><span class="hex">#0B0221</span></div>
+      </div>
+      <div class="typesample">mono display, wide — insert coin ▸ player 1</div>
+      <div class="feels">feels like — <b>saturday arcade</b></div>
+    </article>
+
+    <!-- C -->
+    <article class="card dir-c">
+      <div class="screen"><canvas id="mtx-c" width="120" height="352"></canvas><span class="bezel-label">6 × 18 · live light-engine</span></div>
+      <div class="tagrow"><span class="tag">C</span><h2 class="name">Mono Glow</h2></div>
+      <p class="thesis">Near-white light, one electric accent, everything else quiet. Reads premium and sits politely beside an Atech kit — the “Powered by Atech” route.</p>
+      <div class="wordmark">Atech <b>Arcade</b></div>
+      <div class="swatches">
+        <div class="sw"><span class="chip" style="background:#f4f5f7"></span><span class="hex">#F4F5F7</span></div>
+        <div class="sw"><span class="chip" style="background:#c7ff4d"></span><span class="hex">#C7FF4D</span></div>
+        <div class="sw"><span class="chip" style="background:#6c6f78"></span><span class="hex">#6C6F78</span></div>
+        <div class="sw"><span class="chip" style="background:#0c0d0f"></span><span class="hex">#0C0D0F</span></div>
+      </div>
+      <div class="typesample">grotesk display · mono — select · start · exit</div>
+      <div class="feels">feels like — <b>powered-by-atech minimal</b></div>
+    </article>
+  </div>
+
+  <footer>
+    Every panel above is the <strong>actual</strong> smooth-glow engine — same easing and decay the firmware will drive, the dashboard will mirror, and the product renders will use. So a pick here is a pick for the whole system. Say <span class="k">go with B</span> (or “A but the accent from C”, etc.) and I’ll lock the palette, choose the type, draw the wordmark, and start the case renders.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var COLS=6, ROWS=18, GROUND="#050506";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function GlowMatrix(canvas, opts){
+    var ctx=canvas.getContext("2d");
+    var dpr=Math.max(1, Math.min(2, window.devicePixelRatio||1));
+    var Wc=canvas.width, Hc=canvas.height;            // css px (attrs)
+    canvas.width=Wc*dpr; canvas.height=Hc*dpr;
+    canvas.style.width=Wc+"px"; canvas.style.height=Hc+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    var cw=Wc/COLS, ch=Hc/ROWS, ledR=Math.min(cw,ch)*0.34;
+    var N=COLS*ROWS;
+    var r=new Float32Array(N), g=new Float32Array(N), b=new Float32Array(N);
+    var decay=opts.decay, emit=opts.emit, state=opts.init?opts.init():{};
+
+    function setMax(x,y,col){
+      x=Math.round(x); y=Math.round(y);
+      if(x<0||x>=COLS||y<0||y>=ROWS) return;
+      var i=y*COLS+x;
+      if(col[0]>r[i])r[i]=col[0]; if(col[1]>g[i])g[i]=col[1]; if(col[2]>b[i])b[i]=col[2];
+    }
+    var api={set:setMax, cols:COLS, rows:ROWS};
+
+    function step(t,dt){
+      var d=Math.pow(decay, dt/16.667);
+      for(var i=0;i<N;i++){ r[i]*=d; g[i]*=d; b[i]*=d; }
+      emit(api, t, dt, state);
+    }
+    function render(){
+      ctx.globalCompositeOperation="source-over";
+      ctx.fillStyle=GROUND; ctx.fillRect(0,0,Wc,Hc);
+      // unlit LED lattice
+      ctx.fillStyle="rgba(255,255,255,.035)";
+      for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){
+        ctx.beginPath();ctx.arc(x*cw+cw/2, y*ch+ch/2, ledR*0.34, 0, 6.2832);ctx.fill();
+      }
+      // glow
+      ctx.globalCompositeOperation="lighter";
+      for(var j=0;j<N;j++){
+        var br=Math.max(r[j],g[j],b[j]); if(br<0.03) continue;
+        var col=j%COLS, row=(j-col)/COLS;
+        var px=col*cw+cw/2, py=row*ch+ch/2;
+        var R=Math.min(255,r[j]*255)|0, G=Math.min(255,g[j]*255)|0, B=Math.min(255,b[j]*255)|0;
+        var halo=ctx.createRadialGradient(px,py,0,px,py,ledR*2.7);
+        halo.addColorStop(0,"rgba("+R+","+G+","+B+","+(0.5*br)+")");
+        halo.addColorStop(.5,"rgba("+R+","+G+","+B+","+(0.12*br)+")");
+        halo.addColorStop(1,"rgba("+R+","+G+","+B+",0)");
+        ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(px,py,ledR*2.7,0,6.2832); ctx.fill();
+        var core=ctx.createRadialGradient(px,py,0,px,py,ledR*0.95);
+        core.addColorStop(0,"rgba("+R+","+G+","+B+","+Math.min(1,br*1.15)+")");
+        core.addColorStop(1,"rgba("+R+","+G+","+B+",0)");
+        ctx.fillStyle=core; ctx.beginPath(); ctx.arc(px,py,ledR*0.95,0,6.2832); ctx.fill();
+      }
+      ctx.globalCompositeOperation="source-over";
+    }
+
+    if(reduce){
+      var tt=0; for(var s=0;s<160;s++){ tt+=0.03; step(tt,16.667); } render(); return;
+    }
+    var last=performance.now(), acc=0;
+    function loop(now){
+      var dt=now-last; last=now; if(dt>60)dt=60; acc+=dt;
+      step(acc, dt); render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // ---- palettes ----
+  var AMBER=[1,.70,.24], EMBER=[1,.42,.20];
+  var CYAN=[.02,.85,.91], MAGENTA=[1,.18,.59], VIOLET=[.48,.20,.97];
+  var WHITE=[.95,.97,1], LIME=[.78,1,.30];
+
+  // A — bouncing ball with warm decay trail
+  GlowMatrix(document.getElementById("mtx-a"), {
+    decay:0.90,
+    init:function(){return {x:2.5,y:5,vx:2.35,vy:3.35,flash:0};},
+    emit:function(m,t,dt,s){
+      var sec=dt/1000;
+      s.x+=s.vx*sec; s.y+=s.vy*sec; s.flash*=Math.pow(0.9,dt/16.667);
+      if(s.x<0){s.x=-s.x;s.vx=-s.vx;s.flash=1;} if(s.x>COLS-1){s.x=2*(COLS-1)-s.x;s.vx=-s.vx;s.flash=1;}
+      if(s.y<0){s.y=-s.y;s.vy=-s.vy;s.flash=1;} if(s.y>ROWS-1){s.y=2*(ROWS-1)-s.y;s.vy=-s.vy;s.flash=1;}
+      var c=[AMBER[0]+(EMBER[0]-AMBER[0])*s.flash, AMBER[1]+(EMBER[1]-AMBER[1])*s.flash, AMBER[2]+(EMBER[2]-AMBER[2])*s.flash];
+      m.set(s.x,s.y,c);
+    }
+  });
+
+  // B — falling blocks that stack, then flash-clear
+  GlowMatrix(document.getElementById("mtx-b"), {
+    decay:0.80,
+    init:function(){var cols=[CYAN,MAGENTA,VIOLET];
+      return {h:[0,0,0,0,0,0], stack:new Array(COLS*ROWS).fill(null), p:null, pal:cols, ci:0, clear:0};},
+    emit:function(m,t,dt,s){
+      if(s.clear>0){ // flash-clear animation
+        s.clear-=dt;
+        for(var k=0;k<s.stack.length;k++){ if(s.stack[k]) m.set(k%COLS,(k-k%COLS)/COLS,[1,1,1]); }
+        if(s.clear<=0){ s.h=[0,0,0,0,0,0]; s.stack.fill(null); }
+        return;
+      }
+      if(!s.p){ var col=(Math.random()*COLS)|0; s.p={col:col,y:0,color:s.pal[s.ci%3]}; s.ci++; }
+      s.p.y += (9.5*dt/1000);
+      var land=ROWS-1-s.h[s.p.col];
+      if(s.p.y>=land){
+        if(land<0){ s.clear=520; s.p=null; return; }
+        s.stack[land*COLS+s.p.col]=s.p.color; s.h[s.p.col]++; s.p=null;
+      } else {
+        m.set(s.p.col, s.p.y, s.p.color);
+      }
+      for(var k=0;k<s.stack.length;k++){ var c=s.stack[k]; if(c) m.set(k%COLS,(k-k%COLS)/COLS,c); }
+    }
+  });
+
+  // C — a single near-white dot on a slow smooth orbit, occasional lime pulse
+  GlowMatrix(document.getElementById("mtx-c"), {
+    decay:0.93,
+    init:function(){return {a:0};},
+    emit:function(m,t,dt,s){
+      var tt=t/1000;
+      var x=2.5+2.15*Math.sin(tt*0.9);
+      var y=8.5+6.6*Math.sin(tt*0.58+1.1);
+      m.set(x,y,WHITE);
+      var ph=(tt%3.4);
+      if(ph<0.55){ var k=0.5+0.5*Math.sin(ph/0.55*Math.PI); m.set(2.5,8.5,[LIME[0]*k,LIME[1]*k,LIME[2]*k]); }
+    }
+  });
+})();
+</script>
