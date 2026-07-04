@@ -17,3 +17,6 @@ tools/gifgen/preview/
 
 # macOS
 .DS_Store
+
+# screen_render host test binary
+modules/screen_render/test_console

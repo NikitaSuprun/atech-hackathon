@@ -1,0 +1,48 @@
+id: screen_render
+name: "Console Screen Renderer + 12th Tile"
+category: display
+interface: gpio
+size: 1
+description: |
+  The console's DUMB screen renderer. Receives Color[108] frames the brain drew
+  (COBS-framed over the link), eases the light engine toward them (decay + bloom
+  per the active LightProfile), maps logical pixels to physical LEDs by reusing
+  the pong compositor (serpentine + per-tile rotation + dirty-tile cache), and
+  drives a SINGLE WS2812 line per tile (the dead SK6812 line-B is dropped, ~2x
+  refresh headroom). Like pong_screen, this module IS the 12th tile: it hosts a
+  NeoTile on its own port plus the renderer/board glue.
+
+driver:
+  header: screen_render_board.h
+  class_name: ScreenRenderBoard
+
+templates:
+  globals: |
+    NeoTile {{ instance }}_tile({{ pin_a }});
+    ScreenRenderBoard {{ instance }};
+  setup: |
+    {{ instance }}_tile.begin();
+    {
+      // Ports 1-6,7,9-11,13 host NeoTile sinks t1..t13 (single-line tile modules);
+      // this module hosts the 12th. Order = TILE_MAP order in pong_config.h.
+      console::TileSink* _t[12] = { &t1, &t2, &t3, &t4, &t5, &t6,
+                                    &t7, &t9, &t10, &t11, &t13, &{{ instance }}_tile };
+      // Stub LightProfile until include/console/themes.h lands (THEMES[].light).
+      console::LightProfile _lp{40, 80, 200, 96, 100};
+      {{ instance }}.begin(_t, 12, _lp);
+    }
+  loop: |
+    {{ instance }}.tick();
+
+events: []
+actions: []
+lib_deps:
+  - "adafruit/Adafruit NeoPixel"
+
+health_check: "{{ instance }}.ok()"
+
+usage: |
+  // Fully automatic renderer; nothing to call from user code. {{ instance }}.ok()
+  // is true when all 12 tiles are bound and the link came up. Send it Color[108]
+  // frames (console::frameEncode) and SET_LIGHT_PROFILE control messages; it
+  // handles full frames and dirty-rects. Tile pointer order MUST match TILE_MAP.
