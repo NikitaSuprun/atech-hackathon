@@ -14,7 +14,7 @@ modules:
                      # pair left is [10, 11] — change this ONE line and re-validate.
   - id: speaker
     instance: speaker_1
-    ports: [4, 5]
+    ports: [3, 4]
   - id: st7735_tft
     instance: tft_1
     ports: [13, 14]
