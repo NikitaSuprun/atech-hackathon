@@ -408,12 +408,14 @@ def draw_wall(
 
     canvas.alpha_composite(wires)
 
-    # tiles (right column rotated 180) and the board cover the hidden wire runs
+    # tiles: rotate each per its TILE_MAP entry (rot 2 = mounted 180°); the board
+    # then covers the hidden wire runs
+    rot_at = {(r, c): rot for r, c, rot in game.TILE_MAP}
     for row in range(6):
         for col in range(2):
             x = GRID_X + col * (TILE + SEAM)
             y = GRID_Y + row * (TILE + SEAM)
-            img = tile_img.rotate(180) if col == 1 else tile_img
+            img = tile_img.rotate(180) if rot_at[(row, col)] == 2 else tile_img
             paste_shadowed(canvas, img, x, y, blur=7, dy=4, alpha=120)
     paste_shadowed(canvas, board_img, bx, by)
 
@@ -428,19 +430,15 @@ def draw_wall(
             width=1.6,
         )
 
-    # rotated-tile icons + shared annotation
+    # rotate icon on each rotated tile, plus a label above the column
+    rot_col = next((c for _, c, rot in game.TILE_MAP if rot == 2), 1)
+    col_cx = GRID_X + rot_col * (TILE + SEAM) + TILE / 2  # rotated column's center x
     for row in range(6):
-        rotate_icon(
-            d_over, GRID_X + TILE + SEAM + TILE - 15, GRID_Y + row * (TILE + SEAM) + 15
-        )
-    ann_x = GRID_X + TILE + SEAM + TILE / 2 - 18
-    ann_w = text(d_over, ann_x, 138, "rotated 180°", 13.5, MUTED, anchor="mm")
-    polyline(
-        d_over,
-        [(ann_x + ann_w / 2 + 7, 141), (GRID_R - 16, GRID_Y + 8)],
-        1.4,
-        FAINT + (210,),
-    )
+        rotate_icon(d_over, col_cx, GRID_Y + row * (TILE + SEAM) + TILE / 2)
+    label_y = GRID_Y - 30  # label sits in the margin above the wall
+    text(d_over, col_cx, label_y, "rotated 180°", 13.5, MUTED, anchor="mm")
+    # leader down from just under the label to just above the tiles
+    polyline(d_over, [(col_cx, label_y + 9), (col_cx, GRID_Y - 3)], 1.4, FAINT + (210,))
 
     # port treatments
     for p in game.PORT_ORDER:

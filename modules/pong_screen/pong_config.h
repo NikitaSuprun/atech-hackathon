@@ -80,14 +80,11 @@ struct TileCfg {
 
 // Index order = WIRING order = port order 1,2,3,4,5,6,7,9,10,11,13,14
 // (matches the pointer array in modules/pong_screen/module.yaml setup template).
-// DEFAULT from known build: ports 1-6 = left column top->bottom, rot 0;
-// ports 7,9,10,11,13,14 = right column top->bottom, mounted flipped = rot 2 (180 deg).
-// CONFIRM/EDIT ON HARDWARE DAY via calibration mode (see docs/PLAN.md):
-//   tileRow/tileCol = where the tile's identity color sits on the wall;
-//   rot from the WHITE corner pixel: TL=0, TR=1, BR=2, BL=3.
-// CALIBRATED on hardware 2026-07-04 ("cyan" variant of the convention finder):
-// positions = ports 1-6 left col top->bottom, 7..14 right col top->bottom;
-// rots = base reading +1 quarter-turn; chip chain serpentine (compositor.cpp).
+// CALIBRATED build (hardware 2026-07-04, "cyan" convention-finder pass): ports 1-6 =
+// LEFT column top->bottom, mounted 180 deg -> rot 2; ports 7,9,10,11,13,14 = RIGHT column
+// top->bottom, upright -> rot 0. Chip chain is serpentine (compositor.cpp).
+// To re-derive on new hardware, run calibration mode (docs/PLAN.md): tileRow/tileCol =
+// where each tile's identity color sits; rot from the WHITE corner pixel (TL=0,TR=1,BR=2,BL=3).
 constexpr TileCfg TILE_MAP[NUM_TILES] = {
     {0, 0, 2},  // port 1
     {1, 0, 2},  // port 2

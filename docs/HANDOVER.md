@@ -9,7 +9,7 @@ Two-player Pong on two **Atech 14-Port boards** (ESP32-S3):
 
 | Board | Modules (port) | Role |
 |---|---|---|
-| **Screen** | 12× `neopixel` Light Grid: ports 1-6 direct + 7,9,10,11,13,14 mounted **flipped 180°** → 6×18 px wall | Game engine (C++ state machine), WiFi **SoftAP** `atech-pong`, UDP server :47420 |
+| **Screen** | 12× `neopixel` Light Grid: ports 1-6 direct (**flipped 180°**) + 7,9,10,11,13,14 cabled (upright) → 6×18 px wall | Game engine (C++ state machine), WiFi **SoftAP** `atech-pong`, UDP server :47420 |
 | **Controller** | knob_p1 (1,2) · knob_p2 (9,10)¹ · speaker (4,5) · TFT 160×80 (13,14) · virtual `pong_control` (7) | WiFi STA, sends inputs 50 Hz, receives feedback 20 Hz → drives speaker jingles, TFT score, knob rings |
 
 ¹ User remembered "8,9" — impossible (port 8 = USB-C, reserved). Default (9,10); if wrong on hardware day it's one line in `controller/project.yaml` ([10,11] is the other valid option).
@@ -72,7 +72,7 @@ Where verified: SDK source at `.venv/lib/python3.11/site-packages/atech/` — `c
 ## Hardware-day checklist (in order — kills the biggest unknowns first)
 
 1. Flash **screen** → identify pattern (auto in LINK_WAIT before first link): each tile = solid hue + WHITE corner pixel (rotation: TL=0° TR=90° BR=180° BL=270°) + gray neighbor pixel (misread guard); white blinks tile-index+1 times. **This is also the RMT go/no-go for 24 strip objects** (12 tiles × 2 lines). Take ONE photo = the calibration record.
-2. Fill `TILE_MAP[12]` in `pong_config.h` (expected: ports 1-6 col 0 rot 0; ports 7,9,10,11,13,14 col 1 rot 180) → rebuild → verify glyph ("F" + arrow) → attract rally shows any residual error as a discontinuity.
+2. Fill `TILE_MAP[12]` in `pong_config.h` (calibrated: ports 1-6 col 0 rot 180; ports 7,9,10,11,13,14 col 1 rot 0) → rebuild → verify glyph ("F" + arrow) → attract rally shows any residual error as a discontinuity.
 3. `uv run atech check` on screen → 13 modules ok (SoftAP proven via health check).
 4. Laptop joins `atech-pong` (pass `pong4242`) → `python tools/fake_controller.py` → play with keyboard: full server proven with zero controller hardware.
 5. Flash **controller** → TFT "SEARCHING" + red-blink rings immediately; `atech monitor` shows knob detents/presses (fixes knob-2 port if needed); `atech check` (speaker/TFT init).
