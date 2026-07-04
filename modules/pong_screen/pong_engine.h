@@ -41,12 +41,24 @@ public:
 private:
     void enter(uint8_t s);
     void applyKnobs(const EngineInputs& in);
-    void serveBall();
+    bool updateHolds(const EngineInputs& in, uint32_t dtMs);
+    void glueBall();
+    void launchFrom(int p, bool count);                 // count=false in attract
+    void serveBall() { launchFrom(server_, true); }
+    bool tryPaddle(int p, float plane);
     void bounceOffPaddle(int p, float u);
+    void stepPhysics();
+    void stepAttract();
+    void onGoal(int scorer);
     uint32_t rnd();                                     // xorshift32
+    void drawScene(Frame& f, float s, bool withBall) const;
+    void drawPips(Frame& f, float s, bool blinkNewest) const;
+    void drawBall(Frame& f, float s) const;
+    void drawPaddle(Frame& f, int p, float s) const;
 
     EngineStatus st_ = {};
     uint32_t rng_ = 1;
+    uint32_t timeMs_ = 0;                               // free-running, drives blink phases
     uint32_t stateMs_ = 0;                              // ms in current state
     uint32_t idleMs_ = 0;                               // READY_CHECK idle -> attract rally
     float ballX_ = 0, ballY_ = 0, velX_ = 0, velY_ = 0, speed_ = 0;
@@ -55,9 +67,13 @@ private:
     bool knobInit_ = false;
     uint32_t holdMs_[2] = {0, 0};
     uint32_t staleMs_ = 0;
+    uint8_t server_ = PONG_NOBODY;                      // conceder of last point serves next
+    uint8_t prevState_ = GS_LINK_WAIT;                  // state before link drop
+    bool everLinked_ = false;
+    bool heldNow_[2] = {false, false};
     // attract-mode demo AI state
     bool attract_ = false;
-    float aiTarget_[2] = {0, 0};
+    uint8_t attractRally_ = 0;                          // forced miss every ~3rd rally
 };
 
 }  // namespace pong

@@ -8,7 +8,8 @@ void Compositor::begin() {
         const TileCfg& cfg = TILE_MAP[t];
         for (int i = 0; i < 9; ++i) {
             int lr = i / 3;
-            int lc = i % 3;
+            // hardware-verified: chip chain is serpentine (middle row reversed)
+            int lc = (lr == 1) ? 2 - (i % 3) : i % 3;
             // LED local (lr,lc) on a tile mounted rot quarter-turns CW shows this region cell
             int rr, rc;
             switch (cfg.rot & 3) {

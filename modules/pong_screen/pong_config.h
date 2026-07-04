@@ -66,19 +66,22 @@ struct TileCfg {
 // CONFIRM/EDIT ON HARDWARE DAY via calibration mode (see docs/PLAN.md):
 //   tileRow/tileCol = where the tile's identity color sits on the wall;
 //   rot from the WHITE corner pixel: TL=0, TR=1, BR=2, BL=3.
+// CALIBRATED on hardware 2026-07-04 ("cyan" variant of the convention finder):
+// positions = ports 1-6 left col top->bottom, 7..14 right col top->bottom;
+// rots = base reading +1 quarter-turn; chip chain serpentine (compositor.cpp).
 constexpr TileCfg TILE_MAP[NUM_TILES] = {
-    {0, 0, 0},  // port 1
-    {1, 0, 0},  // port 2
-    {2, 0, 0},  // port 3
-    {3, 0, 0},  // port 4
-    {4, 0, 0},  // port 5
-    {5, 0, 0},  // port 6
-    {0, 1, 2},  // port 7
-    {1, 1, 2},  // port 9
-    {2, 1, 2},  // port 10
-    {3, 1, 2},  // port 11
-    {4, 1, 2},  // port 13
-    {5, 1, 2},  // port 14 (hosted by the pong_screen module itself)
+    {0, 0, 2},  // port 1
+    {1, 0, 2},  // port 2
+    {2, 0, 2},  // port 3
+    {3, 0, 2},  // port 4
+    {4, 0, 2},  // port 5
+    {5, 0, 2},  // port 6
+    {0, 1, 0},  // port 7
+    {1, 1, 0},  // port 9
+    {2, 1, 0},  // port 10
+    {3, 1, 0},  // port 11
+    {4, 1, 0},  // port 13
+    {5, 1, 0},  // port 14 (hosted by the pong_screen module itself)
 };
 
 // ---------------- rings ----------------

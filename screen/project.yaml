@@ -19,4 +19,5 @@ modules:
   - {id: neopixel, instance: g13, port: 13}
   # The game module hosts the 12th grid on its own port. MUST BE LAST —
   # its setup template references every g* instance above (add-order).
-  - {id: pong_screen, instance: pong, port: 14}
+  # instance must not be named "pong" — collides with namespace pong in main.cpp
+  - {id: pong_screen, instance: game, port: 14}

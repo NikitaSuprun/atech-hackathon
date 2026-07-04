@@ -15,23 +15,49 @@ modules:
   - {id: neopixel, instance: g14, port: 14}
 code:
   loop: |
-    // Identify pattern: tile i (port order) = identity hue (repeats per column set),
-    // chip pixel 0 = white rotation corner blinking (i+1) times per 3 s window,
-    // chip pixel 1 = gray marker on the tile's local top edge.
+    // CONVENTION FINDER: 8 variants, 5 s each, named by the middle indicator
+    // band color: 1 red, 2 green, 3 blue, 4 yellow, 5 magenta, 6 cyan,
+    // 7 white, 8 orange. Correct = F upright, arrow down, amber top, cyan bottom.
     static NeoPixelGrid* T[12] = {&g1,&g2,&g3,&g4,&g5,&g6,&g7,&g9,&g10,&g11,&g13,&g14};
-    static const uint8_t C[6][3] = {
-      {180,0,0},{0,180,0},{0,0,180},{180,180,0},{180,0,180},{0,180,180}
+    static const struct { uint8_t r, c, rot; } M[12] = {
+      {0,0,1},{1,0,1},{2,0,1},{3,0,1},{4,0,1},{5,0,1},
+      {0,1,3},{1,1,3},{2,1,3},{3,1,3},{4,1,3},{5,1,3}
     };
-    uint32_t now = millis();
-    uint32_t phase = now % 3000;
-    for (int i = 0; i < 12; i++) {
-      const uint8_t* c = C[i % 6];
-      T[i]->setAll(c[0], c[1], c[2]);
-      uint32_t k = phase / 200;
-      bool bright = (k < (uint32_t)(2 * (i + 1))) && (k % 2 == 0);
-      uint8_t w = bright ? 255 : 70;
-      T[i]->setPixel(0, w, w, w);
-      T[i]->setPixel(1, 70, 70, 70);
-      T[i]->show();
+    static uint8_t fb[18][6][3];
+    memset(fb, 0, sizeof(fb));
+    for (int x = 0; x < 6; x++) { fb[0][x][0] = 180; fb[0][x][1] = 80; }
+    for (int x = 0; x < 6; x++) { fb[17][x][1] = 140; fb[17][x][2] = 180; }
+    for (int y = 2; y <= 8; y++) { fb[y][1][0] = fb[y][1][1] = fb[y][1][2] = 200; }
+    for (int x = 1; x <= 4; x++) { fb[2][x][0] = fb[2][x][1] = fb[2][x][2] = 200; }
+    for (int x = 1; x <= 3; x++) { fb[5][x][0] = fb[5][x][1] = fb[5][x][2] = 200; }
+    for (int y = 11; y <= 15; y++) { fb[y][2][0] = fb[y][2][1] = fb[y][2][2] = 200; }
+    fb[14][1][0] = fb[14][1][1] = fb[14][1][2] = 200;
+    fb[14][3][0] = fb[14][3][1] = fb[14][3][2] = 200;
+    int v = (int)((millis() / 5000) % 8);
+    int k = v % 4;
+    bool serp = v >= 4;
+    static const uint8_t VC[8][3] = {
+      {255,0,0},{0,255,0},{0,0,255},{255,255,0},
+      {255,0,255},{0,255,255},{255,255,255},{255,90,0}
+    };
+    for (int x = 0; x < 6; x++) {
+      fb[9][x][0] = VC[v][0]; fb[9][x][1] = VC[v][1]; fb[9][x][2] = VC[v][2];
+      fb[10][x][0] = VC[v][0]; fb[10][x][1] = VC[v][1]; fb[10][x][2] = VC[v][2];
     }
-    delay(25);
+    for (int t = 0; t < 12; t++) {
+      for (int idx = 0; idx < 9; idx++) {
+        int lr = idx / 3;
+        int lc = serp && lr == 1 ? 2 - (idx % 3) : idx % 3;
+        int pr, pc;
+        switch ((M[t].rot + k) % 4) {
+          case 1:  pr = lc;      pc = 2 - lr; break;
+          case 2:  pr = 2 - lr;  pc = 2 - lc; break;
+          case 3:  pr = 2 - lc;  pc = lr;     break;
+          default: pr = lr;      pc = lc;     break;
+        }
+        int y = M[t].r * 3 + pr, x = M[t].c * 3 + pc;
+        T[t]->setPixel(idx, fb[y][x][0], fb[y][x][1], fb[y][x][2]);
+      }
+      T[t]->show();
+    }
+    delay(100);
