@@ -23,6 +23,11 @@ constexpr uint8_t PONG_MAX_CONTROLLERS = 4;  // controllerId 0..3 (0 = the dual-
 constexpr uint8_t PONG_WIN_SCORE       = 3;  // match = first to 3
 constexpr uint8_t PONG_NOBODY          = 0xFF;
 
+// heldBits masks (bit0 = P1, bit1 = P2); readyProgress[] full scale
+constexpr uint8_t PONG_HELD_P1         = 0x01;
+constexpr uint8_t PONG_HELD_P2         = 0x02;
+constexpr uint8_t READY_PROGRESS_FULL  = 255;
+
 enum PongGameState : uint8_t {
     GS_LINK_WAIT   = 0,  // no controller input yet / input silent >= 1 s (ball frozen)
     GS_READY_CHECK = 1,  // both players must hold knob buttons READY_HOLD_MS
@@ -31,6 +36,8 @@ enum PongGameState : uint8_t {
     GS_POINT_FLASH = 4,  // goal celebration, auto -> READY_CHECK (or GAME_OVER)
     GS_GAME_OVER   = 5,  // winner set; both-hold -> scores reset -> COUNTDOWN
 };
+
+constexpr uint8_t PONG_STATE_COUNT = 6;
 
 #pragma pack(push, 1)
 

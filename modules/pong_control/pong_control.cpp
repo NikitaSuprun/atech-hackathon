@@ -35,7 +35,7 @@ void PongControl::service(int32_t p1Pos, bool p1Held, int32_t p2Pos, bool p2Held
         pkt.version = PONG_VERSION;
         pkt.type = PKT_INPUT;
         pkt.controllerId = 0;
-        pkt.heldBits = (uint8_t)((p1Held ? 1 : 0) | (p2Held ? 2 : 0));
+        pkt.heldBits = (uint8_t)((p1Held ? PONG_HELD_P1 : 0) | (p2Held ? PONG_HELD_P2 : 0));
         pkt.seq = ++seq_;
         pkt.uptimeMs = now;
         pkt.knobPos[0] = p1Pos;

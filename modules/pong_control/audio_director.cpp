@@ -113,7 +113,7 @@ void AudioDirector::apply(const PongFeedbackPacket& snap, const PongCues& cues, 
 
     // ---- ready locks: chord when this lock completes the pair ----
     if (cues.lockP1 || cues.lockP2) {
-        const bool both = snap.readyProgress[0] == 255 && snap.readyProgress[1] == 255;
+        const bool both = snap.readyProgress[0] == READY_PROGRESS_FULL && snap.readyProgress[1] == READY_PROGRESS_FULL;
         if (both) {
             // may replace a half-played lock motif, never a goal/win jingle
             if (!(jingleActive_ && bigJingle_)) {

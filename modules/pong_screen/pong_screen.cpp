@@ -59,8 +59,8 @@ void PongScreen::tick() {
     pong::EngineInputs in = {};
     in.knobPos[0] = c0.knobPos[0];
     in.knobPos[1] = c0.knobPos[1];
-    in.held[0] = (c0.heldBits & 0x01) != 0;
-    in.held[1] = (c0.heldBits & 0x02) != 0;
+    in.held[0] = (c0.heldBits & PONG_HELD_P1) != 0;
+    in.held[1] = (c0.heldBits & PONG_HELD_P2) != 0;
     bool linked = c0.everSeen && (uint32_t)(now - c0.lastRxMs) <= INPUT_TIMEOUT_MS;
     in.controllerLinked = linked;
     in.controllerRebooted = c0.rebooted;

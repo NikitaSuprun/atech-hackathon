@@ -104,8 +104,8 @@ bool Engine::updateHolds(const EngineInputs& in, uint32_t dtMs) {
         } else {
             holdMs_[p] = 0;
         }
-        uint32_t prog = 255u * holdMs_[p] / READY_HOLD_MS;
-        st_.readyProgress[p] = prog > 255 ? 255 : (uint8_t)prog;
+        uint32_t prog = (uint32_t)READY_PROGRESS_FULL * holdMs_[p] / READY_HOLD_MS;
+        st_.readyProgress[p] = prog > READY_PROGRESS_FULL ? READY_PROGRESS_FULL : (uint8_t)prog;
     }
     return holdMs_[0] >= READY_HOLD_MS && holdMs_[1] >= READY_HOLD_MS;
 }
@@ -221,7 +221,7 @@ void Engine::tick(const EngineInputs& in, uint32_t dtMs) {
     timeMs_ += dtMs;
     heldNow_[0] = in.held[0] && in.controllerLinked;
     heldNow_[1] = in.held[1] && in.controllerLinked;
-    st_.heldBits = (uint8_t)((in.held[0] ? 1 : 0) | (in.held[1] ? 2 : 0));
+    st_.heldBits = (uint8_t)((in.held[0] ? PONG_HELD_P1 : 0) | (in.held[1] ? PONG_HELD_P2 : 0));
 
     if (in.controllerRebooted) {
         lastKnob_[0] = in.knobPos[0];
@@ -339,7 +339,7 @@ void Engine::drawPips(Frame& f, float s, bool blinkNewest) const {
     for (int p = 0; p < 2; ++p) {
         int y = p == 0 ? 15 : 2;
         Color c = scaleC(p == 0 ? COL_P1 : COL_P2, s);
-        for (int i = 0; i < st_.score[p] && i < 3; ++i) {
+        for (int i = 0; i < st_.score[p] && i < PONG_WIN_SCORE; ++i) {
             bool newest = blinkNewest && p == st_.goalBy && i == st_.score[p] - 1;
             if (newest && ((timeMs_ / 125) & 1)) continue;
             f.at(2 * i, y) = c;

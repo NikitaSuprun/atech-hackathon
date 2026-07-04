@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
             }
             printf("\x1b[0m  ");
             switch (y) {
-                case 0: printf("state: %-12s", STATE_NAMES[st.state < 6 ? st.state : 0]); break;
+                case 0: printf("state: %-12s", STATE_NAMES[st.state < PONG_STATE_COUNT ? st.state : 0]); break;
                 case 1: printf("score: P1 %d - %d P2   ", st.score[0], st.score[1]); break;
                 case 2: printf("hold:  P1 %3d%% %s P2 %3d%% %s   ",
                                st.readyProgress[0] * 100 / 255, held[0] ? "[HOLD]" : "      ",
