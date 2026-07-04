@@ -36,4 +36,6 @@ private:
     void draw(const Model& m);
     ST7735_TFT* tft_ = nullptr;
     Model last_;
+    // scorer of the current POINT_FLASH (not in the frozen Model)
+    uint8_t goalBy_ = PONG_NOBODY;
 };

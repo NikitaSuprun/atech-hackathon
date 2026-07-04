@@ -23,8 +23,21 @@ public:
 
     // ---------------- lane F owns everything below ----------------
 private:
+    // last-sent values per ring; only forward real changes to the driver task
+    struct Sent {
+        uint8_t r = 0, g = 0, b = 0, bright = 0;
+        float pos = -1.0f;
+        bool valid = false;
+    };
+    void push(int i, uint8_t r, uint8_t g, uint8_t b, uint8_t bright, float pos);
+
     RotaryEncoder* k_[2] = {nullptr, nullptr};
-    uint32_t animMs_ = 0;         // global animation clock
+    uint32_t animMs_ = 0;         // global animation clock, wrapped at 4000 ms (all periods divide it)
     uint32_t goalFxMs_[2] = {0, 0};  // per-ring one-shot effect timers
     uint8_t  goalFxKind_[2] = {0, 0};
+    Sent     sent_[2];
+    uint32_t stateMs_ = 0;        // dt-accumulated, reset on game-state entry
+    uint8_t  lastState_ = 0xFF;
+    bool     served_ = false;     // countdown saw cues.serve -> snap dot to 0
+    bool     started_ = false;    // first apply(): enableRing + take override
 };

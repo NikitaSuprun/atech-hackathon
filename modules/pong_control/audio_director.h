@@ -19,11 +19,22 @@ public:
 
     // ---------------- lane D owns everything below ----------------
 private:
+    void startJingle(uint32_t lenMs, bool big);
+    bool blipFree() const;
+
     Speaker* spk_ = nullptr;
     bool jingleActive_ = false;
     uint32_t jingleMs_ = 0;       // time since jingle start (suppression window)
+    uint32_t jingleLenMs_ = 0;
+    bool bigJingle_ = false;      // goal/sting/win window: also suppresses the ready chord
     uint32_t countdownMs_ = 0;    // local 3-2-1 scheduler inside GS_COUNTDOWN
     int countdownTicksDone_ = 0;
     bool inCountdown_ = false;
+    bool stingPending_ = false;   // match-point sting scheduled 700 ms after a goal
+    uint32_t stingMs_ = 0;
+    bool linkTonePending_ = false;  // second link-lost tone, 200 ms after the first
+    uint32_t linkToneMs_ = 0;
+    bool hitFlip_ = false;        // alternates hit-blip base 880/659 Hz
+    uint32_t sinceBlipMs_ = 1000; // rally-pulse suppression clock
     uint32_t pulseAccMs_ = 0;     // optional rally pulse accumulator
 };

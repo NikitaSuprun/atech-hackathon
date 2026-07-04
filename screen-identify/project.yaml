@@ -1,0 +1,37 @@
+name: screen-identify
+board: 14port
+modules:
+  - {id: neopixel, instance: g1,  port: 1}
+  - {id: neopixel, instance: g2,  port: 2}
+  - {id: neopixel, instance: g3,  port: 3}
+  - {id: neopixel, instance: g4,  port: 4}
+  - {id: neopixel, instance: g5,  port: 5}
+  - {id: neopixel, instance: g6,  port: 6}
+  - {id: neopixel, instance: g7,  port: 7}
+  - {id: neopixel, instance: g9,  port: 9}
+  - {id: neopixel, instance: g10, port: 10}
+  - {id: neopixel, instance: g11, port: 11}
+  - {id: neopixel, instance: g13, port: 13}
+  - {id: neopixel, instance: g14, port: 14}
+code:
+  loop: |
+    // Identify pattern: tile i (port order) = identity hue (repeats per column set),
+    // chip pixel 0 = white rotation corner blinking (i+1) times per 3 s window,
+    // chip pixel 1 = gray marker on the tile's local top edge.
+    static NeoPixelGrid* T[12] = {&g1,&g2,&g3,&g4,&g5,&g6,&g7,&g9,&g10,&g11,&g13,&g14};
+    static const uint8_t C[6][3] = {
+      {180,0,0},{0,180,0},{0,0,180},{180,180,0},{180,0,180},{0,180,180}
+    };
+    uint32_t now = millis();
+    uint32_t phase = now % 3000;
+    for (int i = 0; i < 12; i++) {
+      const uint8_t* c = C[i % 6];
+      T[i]->setAll(c[0], c[1], c[2]);
+      uint32_t k = phase / 200;
+      bool bright = (k < (uint32_t)(2 * (i + 1))) && (k % 2 == 0);
+      uint8_t w = bright ? 255 : 70;
+      T[i]->setPixel(0, w, w, w);
+      T[i]->setPixel(1, 70, 70, 70);
+      T[i]->show();
+    }
+    delay(25);

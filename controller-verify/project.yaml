@@ -1,0 +1,46 @@
+name: controller-verify
+board: 14port
+modules:
+  - id: rotary_encoder
+    instance: knob_p1
+    ports: [1, 2]
+  - id: rotary_encoder
+    instance: knob_p2
+    ports: [9, 10]
+  - id: speaker
+    instance: speaker_1
+    ports: [4, 5]
+  - id: st7735_tft
+    instance: tft_1
+    ports: [13, 14]
+code:
+  setup: |
+    knob_p1.setAcceleration(false, 1);
+    knob_p2.setAcceleration(false, 1);
+    knob_p1.setRingColor(0, 200, 255);
+    knob_p2.setRingColor(255, 120, 0);
+  loop: |
+    // Turn knobs: positions on TFT + ring dot follows. Press knobs: beep + [H] flag.
+    // Bundled templates also stream detent/press JSON -> `atech monitor`.
+    static int32_t lp1 = -999, lp2 = -999;
+    static bool lh1 = false, lh2 = false;
+    static uint32_t lastDraw = 0;
+    int32_t p1 = knob_p1.getPosition(), p2 = knob_p2.getPosition();
+    bool h1 = knob_p1.isPressed(), h2 = knob_p2.isPressed();
+    if (h1 && !lh1) speaker_1.playNote(523, 90);
+    if (h2 && !lh2) speaker_1.playNote(784, 90);
+    uint32_t now = millis();
+    if ((p1 != lp1 || p2 != lp2 || h1 != lh1 || h2 != lh2) && now - lastDraw > 150) {
+      lastDraw = now;
+      lp1 = p1; lp2 = p2; lh1 = h1; lh2 = h2;
+      char buf[32];
+      tft_1.clear();
+      tft_1.displayText("CTRL VERIFY", 25, 4, 2, ST7735_TFT::COLOR_WHITE);
+      snprintf(buf, sizeof(buf), "P1 %ld %s", (long)p1, h1 ? "[H]" : "");
+      tft_1.displayText(buf, 10, 34, 2, ST7735_TFT::COLOR_CYAN);
+      snprintf(buf, sizeof(buf), "P2 %ld %s", (long)p2, h2 ? "[H]" : "");
+      tft_1.displayText(buf, 10, 56, 2, ST7735_TFT::COLOR_ORANGE);
+      tft_1.display();
+    } else {
+      lh1 = h1; lh2 = h2;
+    }

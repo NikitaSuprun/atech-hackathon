@@ -1,0 +1,46 @@
+#include "pong_control.h"
+
+void PongControl::begin(RotaryEncoder* k1, RotaryEncoder* k2, Speaker* spk, ST7735_TFT* tft) {
+    link_.begin();
+    audio_.begin(spk);
+    display_.begin(tft);
+    rings_.begin(k1, k2);
+    seq_ = 0;
+}
+
+void PongControl::service(int32_t p1Pos, bool p1Held, int32_t p2Pos, bool p2Held) {
+    const uint32_t now = millis();
+    uint32_t dtMs = now - lastServiceMs_;
+    if (dtMs > 100) dtMs = 100;
+    lastServiceMs_ = now;
+
+    link_.poll(now);
+
+    if (link_.isUp() && now - lastSendMs_ >= INPUT_PERIOD_MS) {
+        PongInputPacket pkt = {};
+        pkt.magic = PONG_MAGIC;
+        pkt.version = PONG_VERSION;
+        pkt.type = PKT_INPUT;
+        pkt.controllerId = 0;
+        pkt.heldBits = (uint8_t)((p1Held ? 1 : 0) | (p2Held ? 2 : 0));
+        pkt.seq = ++seq_;
+        pkt.uptimeMs = now;
+        pkt.knobPos[0] = p1Pos;
+        pkt.knobPos[1] = p2Pos;
+        link_.sendRaw(&pkt, sizeof(pkt));
+        lastSendMs_ = now;
+    }
+
+    // bounded drain keeps the loop watchdog-safe under bursts
+    uint8_t buf[64];
+    for (int i = 0; i < 8; ++i) {
+        int n = link_.recvRaw(buf, sizeof(buf));
+        if (n <= 0) break;
+        tracker_.feed(buf, n, now);
+    }
+
+    const PongCues cues = tracker_.poll(now);
+    audio_.apply(tracker_.snapshot(), cues, dtMs);
+    display_.apply(tracker_.snapshot(), cues, tracker_.linked());
+    rings_.apply(tracker_.snapshot(), cues, tracker_.linked(), dtMs);
+}
