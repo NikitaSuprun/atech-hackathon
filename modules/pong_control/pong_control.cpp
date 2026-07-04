@@ -45,8 +45,8 @@ void PongControl::service(int32_t p1Pos, bool p1Held, int32_t p2Pos, bool p2Held
     }
 
     // bounded drain keeps the loop watchdog-safe under bursts
-    uint8_t buf[64];
-    for (int i = 0; i < 8; ++i) {
+    uint8_t buf[PONG_LINK_MTU];
+    for (int i = 0; i < PONG_LINK_DRAIN; ++i) {
         int n = link_.recvRaw(buf, sizeof(buf));
         if (n <= 0) break;
         tracker_.feed(buf, n, now);

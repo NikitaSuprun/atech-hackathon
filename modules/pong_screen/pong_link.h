@@ -8,6 +8,9 @@
 // hostile, ESP-NOW implementations of this same interface are a two-file swap —
 // the 24/26-byte payloads fit ESP-NOW's 250-byte limit unchanged.
 
+constexpr size_t PONG_LINK_MTU   = 64;  // max datagram payload bytes (packets are 24/26)
+constexpr int    PONG_LINK_DRAIN = 8;   // bounded recv reads per poll (watchdog-safe)
+
 struct PongLink {
     virtual bool begin() = 0;                               // non-blocking init
     virtual void poll(uint32_t nowMs) = 0;                  // pump reconnect state machine

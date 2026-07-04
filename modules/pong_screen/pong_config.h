@@ -50,6 +50,9 @@ constexpr float       ATTRACT_DIM = 0.45f;
 
 // ---------------- wall / compositor ----------------
 constexpr int NUM_TILES = 12;
+constexpr int TILE_DIM      = 3;                   // 3x3 LEDs per physical tile
+constexpr int LEDS_PER_TILE = TILE_DIM * TILE_DIM; // 9 chips per tile
+constexpr int TILE_BYTES    = LEDS_PER_TILE * (int)sizeof(pong::Color);  // 27 = packed RGB per tile
 constexpr uint8_t WALL_BRIGHTNESS = 40;           // 0..51 (driver clamps at 51)
 constexpr float HEARTBEAT_REPAINT_S = 2.0f;       // periodic full repaint heals WS2812 glitches
 

@@ -36,7 +36,7 @@ bool LinkUdpClient::isUp() const {
 
 bool LinkUdpClient::sendRaw(const void* buf, size_t len) {
     if (!isUp()) return false;
-    if (udp_.beginPacket(IPAddress(192, 168, 4, 1), NET_UDP_PORT) != 1) return false;
+    if (udp_.beginPacket(IPAddress(NET_AP_IP), NET_UDP_PORT) != 1) return false;
     udp_.write((const uint8_t*)buf, len);
     return udp_.endPacket() == 1;
 }

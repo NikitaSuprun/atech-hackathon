@@ -116,8 +116,8 @@ void PongScreen::tick() {
 }
 
 void PongScreen::pumpInput(uint32_t now) {
-    for (int i = 0; i < 8; ++i) {
-        uint8_t buf[64];
+    for (int i = 0; i < PONG_LINK_DRAIN; ++i) {
+        uint8_t buf[PONG_LINK_MTU];
         int n = link_.recvRaw(buf, sizeof(buf));
         if (n <= 0) break;
         ++s_rxAny;
@@ -181,12 +181,12 @@ void PongScreen::sendFeedback() {
 
 void PongScreen::pushFrame(bool force, uint32_t now) {
     if (force) lastFullPaintMs_ = now;
-    uint8_t buf[27];
+    uint8_t buf[TILE_BYTES];
     for (int t = 0; t < NUM_TILES && t < n_; ++t) {
         NeoPixelGrid* g = tiles_[t];
         if (!g) continue;
         if (!comp_.composeTile(t, frame_, buf, force)) continue;
-        for (int i = 0; i < 9; ++i)
+        for (int i = 0; i < LEDS_PER_TILE; ++i)
             g->setPixel(i, buf[i * 3], buf[i * 3 + 1], buf[i * 3 + 2]);
         g->show();
     }

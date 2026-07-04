@@ -14,8 +14,8 @@ public:
     bool sendRaw(const void* buf, size_t len) override {
         static const char* H = "0123456789ABCDEF";
         const uint8_t* p = (const uint8_t*)buf;
-        char out[8 + 2 * 64];
-        if (len > 64) return false;
+        char out[8 + 2 * PONG_LINK_MTU];
+        if (len > PONG_LINK_MTU) return false;
         int o = 0;
         out[o++] = 'P'; out[o++] = 'K'; out[o++] = 'T'; out[o++] = ':';
         for (size_t i = 0; i < len; ++i) {

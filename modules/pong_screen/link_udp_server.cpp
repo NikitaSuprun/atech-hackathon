@@ -3,9 +3,9 @@
 bool LinkUdpServer::begin() {
     WiFi.persistent(false);
     WiFi.mode(WIFI_AP);
-    WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1),
-                      IPAddress(255, 255, 255, 0));
-    up_ = WiFi.softAP(NET_SSID, NET_PASS, NET_CHANNEL, false, 4);
+    WiFi.softAPConfig(IPAddress(NET_AP_IP), IPAddress(NET_AP_IP),
+                      IPAddress(NET_AP_NETMASK));
+    up_ = WiFi.softAP(NET_SSID, NET_PASS, NET_CHANNEL, false, NET_AP_MAX_CLIENTS);
     WiFi.setSleep(false);
     udp_.begin(NET_UDP_PORT);
     return up_;
@@ -37,7 +37,7 @@ bool LinkUdpServer::sendTo(const IPAddress& ip, uint16_t port, const void* buf, 
     }
     // belt & braces: also broadcast — a power-saving STA can drop AP->client
     // unicast, but broadcast is delivered after each DTIM beacon
-    if (udp_.beginPacket(IPAddress(192, 168, 4, 255), NET_UDP_LOCAL_PORT)) {
+    if (udp_.beginPacket(IPAddress(NET_AP_BROADCAST), NET_UDP_LOCAL_PORT)) {
         udp_.write(reinterpret_cast<const uint8_t*>(buf), len);
         udp_.endPacket();
     }
