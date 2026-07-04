@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Product-shot animation of the PONG WALL controller board -> assets/controller.gif."""
+
 import argparse
 import math
 import os
@@ -40,8 +41,27 @@ NOTE_LIFE = 20
 PULSE_LIFE = 16
 
 # palette / encoding
-PAL_SAMPLES = (0, 20, 47, 55, 67, 90, 110, 118, 124, 150, 160,
-               178, 186, 190, 205, 216, 220, 228, 235)
+PAL_SAMPLES = (
+    0,
+    20,
+    47,
+    55,
+    67,
+    90,
+    110,
+    118,
+    124,
+    150,
+    160,
+    178,
+    186,
+    190,
+    205,
+    216,
+    220,
+    228,
+    235,
+)
 PAL_BRIGHT, PAL_DARK, PAL_SPLIT_LUM = 96, 159, 60
 TRANSPARENT = 255
 
@@ -67,7 +87,7 @@ SPK_PITCH = 11
 
 
 def inv_tone(hexs):
-    v = np.array([int(hexs[i:i + 2], 16) for i in (1, 3, 5)]) / 255.0
+    v = np.array([int(hexs[i : i + 2], 16) for i in (1, 3, 5)]) / 255.0
     u = np.clip(v, 0.0, 0.995) ** (1 / 0.9)
     return u / (1 - u)
 
@@ -112,7 +132,11 @@ NOTE = ("00100", "00110", "00101", "00100", "00100", "01100", "11100")
 
 def glow(buf, x, y, color, inten=1.0, scale=1.0):
     core = color + (WHITE - color) * 0.7
-    for sig, wgt, col in ((14 * scale, 0.30, color), (6 * scale, 0.75, color), (2.5 * scale, 1.6, core)):
+    for sig, wgt, col in (
+        (14 * scale, 0.30, color),
+        (6 * scale, 0.75, color),
+        (2.5 * scale, 1.6, core),
+    ):
         r = max(2, int(sig * 3.0))
         x0, x1 = max(0, int(x) - r), min(W, int(x) + r + 1)
         y0, y1 = max(0, int(y) - r), min(H, int(y) + r + 1)
@@ -120,7 +144,9 @@ def glow(buf, x, y, color, inten=1.0, scale=1.0):
             continue
         dx = np.arange(x0, x1) - x
         dy = np.arange(y0, y1) - y
-        g = np.exp(-(dy[:, None] ** 2 + dx[None, :] ** 2) / (2 * sig * sig)) * (wgt * inten)
+        g = np.exp(-(dy[:, None] ** 2 + dx[None, :] ** 2) / (2 * sig * sig)) * (
+            wgt * inten
+        )
         buf[y0:y1, x0:x1] += g[..., None] * col
 
 
@@ -180,7 +206,7 @@ def draw_text(img, s, cx, cy, scale, colors, inten=1.0):
             for rx, c in enumerate(row):
                 if c == "1":
                     px, py = x0 + (i * 6 + rx) * scale, y0 + ry * scale
-                    img[py:py + sz, px:px + sz] += col * inten
+                    img[py : py + sz, px : px + sz] += col * inten
 
 
 def ring_pos(center, k):
@@ -192,7 +218,7 @@ def build_static():
     rng = np.random.default_rng(7)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float64)
 
-    light = 0.55 + 0.75 * np.exp(-((xx - 220) ** 2 + (yy - 235) ** 2) / (2 * 250 ** 2))
+    light = 0.55 + 0.75 * np.exp(-((xx - 220) ** 2 + (yy - 235) ** 2) / (2 * 250**2))
     S = BG_C * light[..., None]
 
     d = rrect_d(xx, yy, 26, 26, 414, 534, 22)
@@ -223,17 +249,21 @@ def build_static():
     d2 = rrect_d(xx, yy, BX0, BY0, BX1, BY1, 12)
     bm = np.clip(0.5 - d2, 0, 1)[..., None]
     bez = BEZ_C * (1.06 - 0.2 * (yy - BY0) / (BY1 - BY0))[..., None]
-    bez += (np.exp(-((d2 + 2.2) ** 2) / 2.0) * np.clip(1 - (yy - BY0) / 30, 0, 1))[..., None] * 0.05
+    bez += (np.exp(-((d2 + 2.2) ** 2) / 2.0) * np.clip(1 - (yy - BY0) / 30, 0, 1))[
+        ..., None
+    ] * 0.05
     S = S * (1 - bm) + bez * bm
     d3 = rrect_d(xx, yy, GX0, GY0, GX1, GY1, 7)
     gm = np.clip(0.5 - d3, 0, 1)
     glass = GLASS_C * (1 + 0.35 * np.clip(1 - (yy - GY0) / 40, 0, 1))[..., None]
-    streak = np.exp(-(((xx - GX0) - (yy - GY0) * 1.7 - 46) ** 2) / (2 * 13 ** 2)) * np.clip(1 - (yy - GY0) / 70, 0, 1)
+    streak = np.exp(
+        -(((xx - GX0) - (yy - GY0) * 1.7 - 46) ** 2) / (2 * 13**2)
+    ) * np.clip(1 - (yy - GY0) / 70, 0, 1)
     glass += streak[..., None] * 0.035 * np.array([0.9, 0.95, 1.05])
     glass *= (1 - 0.35 * np.exp(-((d3 + 1.5) ** 2) / 2.0))[..., None]
     gm3 = gm[..., None]
     S = S * (1 - gm3) + glass * gm3
-    spill = 0.30 + 0.70 * gm[GY0 - PAD:GY1 + PAD, GX0 - PAD:GX1 + PAD, None]
+    spill = 0.30 + 0.70 * gm[GY0 - PAD : GY1 + PAD, GX0 - PAD : GX1 + PAD, None]
 
     def hole(cx, cy, r, depth=0.85):
         R = int(r + 4)
@@ -242,9 +272,13 @@ def build_static():
         hdy = np.arange(hy0, hy0 + 2 * R + 1) - cy
         rr = np.hypot(hdy[:, None], hdx[None, :])
         a = np.clip(r + 0.5 - rr, 0, 1)[..., None]
-        reg = S[hy0:hy0 + 2 * R + 1, hx0:hx0 + 2 * R + 1]
+        reg = S[hy0 : hy0 + 2 * R + 1, hx0 : hx0 + 2 * R + 1]
         reg[:] = reg * (1 - a * depth) + HOLE_C * a * depth
-        rimh = np.exp(-((rr - r - 0.8) ** 2) / 1.0) * np.clip(hdy[:, None] / r, 0, 1) * 0.04
+        rimh = (
+            np.exp(-((rr - r - 0.8) ** 2) / 1.0)
+            * np.clip(hdy[:, None] / r, 0, 1)
+            * 0.04
+        )
         reg += rimh[..., None]
 
     # LED ring wells with a faint idle tint
@@ -258,7 +292,7 @@ def build_static():
         for j in range(5):
             hole(SPK[0] + (i - 2) * SPK_PITCH, SPK[1] + (j - 2) * SPK_PITCH, 2.6, 0.9)
     d4 = rrect_d(xx, yy, SPK[0] - 30, SPK[1] - 30, SPK[0] + 30, SPK[1] + 30, 12)
-    S += (np.exp(-(d4 ** 2) / 1.4) * 0.022)[..., None]
+    S += (np.exp(-(d4**2) / 1.4) * 0.022)[..., None]
 
     def screw(cx, cy):
         r = 7.5
@@ -267,11 +301,16 @@ def build_static():
         sdx = np.arange(sx0, sx0 + 2 * R + 1) - cx
         sdy = np.arange(sy0, sy0 + 2 * R + 1) - cy
         rr = np.hypot(sdy[:, None], sdx[None, :])
-        reg = S[sy0:sy0 + 2 * R + 1, sx0:sx0 + 2 * R + 1]
+        reg = S[sy0 : sy0 + 2 * R + 1, sx0 : sx0 + 2 * R + 1]
         sink = np.clip(r + 2.5 - rr, 0, 1) * 0.5
         reg *= (1 - sink)[..., None]
         a = np.clip(r + 0.5 - rr, 0, 1)[..., None]
-        met = inv_tone("#2a3038") * np.clip(1 - 0.5 * (sdy[:, None] + 0.4 * sdx[None, :]) / r, 0.5, 1.5)[..., None]
+        met = (
+            inv_tone("#2a3038")
+            * np.clip(1 - 0.5 * (sdy[:, None] + 0.4 * sdx[None, :]) / r, 0.5, 1.5)[
+                ..., None
+            ]
+        )
         u = (sdx[None, :] + sdy[:, None]) / math.sqrt(2)
         v = (sdx[None, :] - sdy[:, None]) / math.sqrt(2)
         slot = ((np.abs(u) < 1.2) | (np.abs(v) < 1.2)) & (rr < r - 1)
@@ -284,13 +323,19 @@ def build_static():
     def smd(x, y, w, h):
         body = inv_tone("#171b22")
         pad = inv_tone("#252b34")
-        S[y:y + h, x:x + w] = S[y:y + h, x:x + w] * 0.35 + body
-        S[y:y + h, x:x + 2] = pad
-        S[y:y + h, x + w - 2:x + w] = pad
-        S[y + h:y + h + 1, x:x + w] *= 0.8
+        S[y : y + h, x : x + w] = S[y : y + h, x : x + w] * 0.35 + body
+        S[y : y + h, x : x + 2] = pad
+        S[y : y + h, x + w - 2 : x + w] = pad
+        S[y + h : y + h + 1, x : x + w] *= 0.8
 
-    for sx, sy, sw, sh in ((346, 444, 13, 5), (346, 456, 13, 5), (346, 468, 13, 5),
-                           (374, 448, 5, 13), (374, 466, 5, 13), (386, 448, 5, 13)):
+    for sx, sy, sw, sh in (
+        (346, 444, 13, 5),
+        (346, 456, 13, 5),
+        (346, 468, 13, 5),
+        (374, 448, 5, 13),
+        (374, 466, 5, 13),
+        (386, 448, 5, 13),
+    ):
         smd(sx, sy, sw, sh)
 
     silk = np.array([0.9, 1.0, 1.1])
@@ -301,7 +346,7 @@ def build_static():
     draw_text(S, "SN 001", 362, 520, 1, silk * 0.022)
 
     rn = np.hypot((xx - 220) / 280, (yy - 252) / 330)
-    vig = np.clip(1 - 0.42 * rn ** 2.6, 0, 1)[..., None]
+    vig = np.clip(1 - 0.42 * rn**2.6, 0, 1)[..., None]
     dith = (rng.random((H, W, 3)) - 0.5) * 2.4
     return S, spill, vig, dith
 
@@ -316,7 +361,7 @@ def draw_knob(buf, center, rot, press, accent, mglow=1.0):
     XX, YY = dx[None, :], dy[:, None]
     rr = np.hypot(YY, XX)
     th = np.arctan2(YY, XX)
-    reg = buf[y0:y0 + 2 * R + 1, x0:x0 + 2 * R + 1]
+    reg = buf[y0 : y0 + 2 * R + 1, x0 : x0 + 2 * R + 1]
 
     sh = np.clip((rc + 7 - np.hypot(YY - 3, XX)) / 7, 0, 1)
     reg *= (1 - 0.55 * sh)[..., None]
@@ -332,8 +377,12 @@ def draw_knob(buf, center, rot, press, accent, mglow=1.0):
     metal *= light[..., None]
     hub = np.clip((0.30 * rc - rr) / 1.5 + 0.5, 0, 1)
     metal *= (1 - 0.18 * hub)[..., None]
-    metal += (np.exp(-((rr - 0.30 * rc) ** 2) / 2.0) * np.clip(0.5 - YY / rc, 0, 1) * 0.05)[..., None]
-    spec = np.exp(-((XX + 0.36 * rc) ** 2 + (YY + 0.36 * rc) ** 2) / (2 * (0.30 * rc) ** 2))
+    metal += (
+        np.exp(-((rr - 0.30 * rc) ** 2) / 2.0) * np.clip(0.5 - YY / rc, 0, 1) * 0.05
+    )[..., None]
+    spec = np.exp(
+        -((XX + 0.36 * rc) ** 2 + (YY + 0.36 * rc) ** 2) / (2 * (0.30 * rc) ** 2)
+    )
     metal += (spec * 0.16 * (1 - band))[..., None]
     if press > 0:
         metal *= 1 - 0.10 * press
@@ -343,7 +392,14 @@ def draw_knob(buf, center, rot, press, accent, mglow=1.0):
     ar = math.radians(rot)
     ca, sa = math.cos(ar), math.sin(ar)
     for t in np.linspace(0.34, 0.90, 11):
-        glow(buf, cx + ca * t * rc, cy + sa * t * rc, accent, (0.04 + 0.34 * t) * mglow, 0.24)
+        glow(
+            buf,
+            cx + ca * t * rc,
+            cy + sa * t * rc,
+            accent,
+            (0.04 + 0.34 * t) * mglow,
+            0.24,
+        )
     glow(buf, cx + ca * 0.97 * rc, cy + sa * 0.97 * rc, accent, 0.85 * mglow, 0.40)
 
 
@@ -377,9 +433,22 @@ def smoothstep(u):
 
 
 def update(f, st):
-    p = {"press": 0.0, "rot1": -90.0, "rot2": -90.0, "m1": 1.0, "m2": 1.0,
-         "c1": CYAN, "c2": AMBER, "g1": 1.0, "g2": 1.0, "acc1": CYAN, "acc2": AMBER,
-         "pop": f in POP_FRAMES, "ov1": None, "ov2": None}
+    p = {
+        "press": 0.0,
+        "rot1": -90.0,
+        "rot2": -90.0,
+        "m1": 1.0,
+        "m2": 1.0,
+        "c1": CYAN,
+        "c2": AMBER,
+        "g1": 1.0,
+        "g2": 1.0,
+        "acc1": CYAN,
+        "acc2": AMBER,
+        "pop": f in POP_FRAMES,
+        "ov1": None,
+        "ov2": None,
+    }
     if f < HOLD_END:
         p["press"] = 1.0
         p["m1"] = p["m2"] = 0.5
@@ -404,7 +473,11 @@ def update(f, st):
         st.r1[:] = a
         st.r2[:] = a
     elif in_rally(f):
-        t0 = COUNT_END if f < RALLY1_END else (POINT1_END if f < RALLY2_END else POINT2_END)
+        t0 = (
+            COUNT_END
+            if f < RALLY1_END
+            else (POINT1_END if f < RALLY2_END else POINT2_END)
+        )
         p["rot1"] = rally_rot(f, t0, 1)
         p["rot2"] = rally_rot(f, t0, -1)
         st.r1 *= TRAIL_DECAY
@@ -464,9 +537,13 @@ def tft_layer(f):
     elif in_rally(f):
         s = "0:0" if f < RALLY1_END else ("1:0" if f < RALLY2_END else "2:1")
         draw_text(t, s, cx, cy - 12, 5, [CYAN, WHITE * 0.7, AMBER], 2.6)
-        draw_text(t, "RALLY", cx, cy + 26, 2, WHITE * 0.85, 1.2 + 0.3 * math.sin(f * 0.5))
+        draw_text(
+            t, "RALLY", cx, cy + 26, 2, WHITE * 0.85, 1.2 + 0.3 * math.sin(f * 0.5)
+        )
     elif f < POINT2_END:
-        t0, tag, col = (RALLY1_END, "P1!", CYAN) if f < POINT1_END else (RALLY2_END, "P2!", AMBER)
+        t0, tag, col = (
+            (RALLY1_END, "P1!", CYAN) if f < POINT1_END else (RALLY2_END, "P2!", AMBER)
+        )
         inten = 3.4 if ((f - t0) // 3) % 2 == 0 else 1.4
         draw_text(t, "POINT", cx, cy - 15, 4, WHITE, inten)
         draw_text(t, tag, cx, cy + 17, 4, col, inten)
@@ -480,13 +557,24 @@ def tft_layer(f):
 def add_tft(buf, t, spill):
     out = t * 1.1 + blur(t, 1.6) * 0.8 + blur(t, 5.0) * 0.55
     out[::2] *= 0.93
-    buf[GY0 - PAD:GY1 + PAD, GX0 - PAD:GX1 + PAD] += out * spill
+    buf[GY0 - PAD : GY1 + PAD, GX0 - PAD : GX1 + PAD] += out * spill
 
 
-EVENTS = ((RALLY1_END, CYAN), (RALLY2_END, AMBER), (WIN_START, GOLD), (WIN_START + 9, GOLD))
-NOTES = ((RALLY1_END + 1, CYAN), (RALLY1_END + 7, CYAN),
-         (RALLY2_END + 1, AMBER), (RALLY2_END + 7, AMBER),
-         (WIN_START + 1, GOLD), (WIN_START + 7, GOLD), (WIN_START + 13, GOLD))
+EVENTS = (
+    (RALLY1_END, CYAN),
+    (RALLY2_END, AMBER),
+    (WIN_START, GOLD),
+    (WIN_START + 9, GOLD),
+)
+NOTES = (
+    (RALLY1_END + 1, CYAN),
+    (RALLY1_END + 7, CYAN),
+    (RALLY2_END + 1, AMBER),
+    (RALLY2_END + 7, AMBER),
+    (WIN_START + 1, GOLD),
+    (WIN_START + 7, GOLD),
+    (WIN_START + 13, GOLD),
+)
 
 
 def draw_note(buf, x, y, color, alpha):
@@ -507,7 +595,14 @@ def speaker_fx(buf, f):
                     d = math.hypot(i - 2, j - 2)
                     w = math.exp(-((a * 0.55 - d) ** 2) / 1.4) * env
                     if w > 0.02:
-                        glow(buf, SPK[0] + (i - 2) * SPK_PITCH, SPK[1] + (j - 2) * SPK_PITCH, c, 0.5 * w, 0.28)
+                        glow(
+                            buf,
+                            SPK[0] + (i - 2) * SPK_PITCH,
+                            SPK[1] + (j - 2) * SPK_PITCH,
+                            c,
+                            0.5 * w,
+                            0.28,
+                        )
     for t0, col in NOTES:
         a = f - t0
         if 0 <= a < NOTE_LIFE:
@@ -519,7 +614,10 @@ def draw_all(f, p, static, spill):
     buf = static.copy()
     draw_knob(buf, K1, p["rot1"], p["press"], p["acc1"], p["m1"])
     draw_knob(buf, K2, p["rot2"], p["press"], p["acc2"], p["m2"])
-    for center, key, ovk, gk in ((K1, "ring1", "ov1", "g1"), (K2, "ring2", "ov2", "g2")):
+    for center, key, ovk, gk in (
+        (K1, "ring1", "ov1", "g1"),
+        (K2, "ring2", "ov2", "g2"),
+    ):
         arr, col, gain = p[key], p["c1" if key == "ring1" else "c2"], p[gk]
         if p["pop"]:
             arr, col, gain = np.full(RING_LEDS, 1.1), WHITE, 1.0
@@ -543,14 +641,20 @@ def tonemap(buf, vig, dith):
 
 
 def remap_exact(frames, pal_rgb):
-    packed = [(fr[..., 0].astype(np.uint32) << 16) | (fr[..., 1].astype(np.uint32) << 8) | fr[..., 2]
-              for fr in frames]
+    packed = [
+        (fr[..., 0].astype(np.uint32) << 16)
+        | (fr[..., 1].astype(np.uint32) << 8)
+        | fr[..., 2]
+        for fr in frames
+    ]
     uniq = np.unique(np.concatenate([p.ravel() for p in packed]))
-    cols = np.stack([(uniq >> 16) & 255, (uniq >> 8) & 255, uniq & 255], axis=1).astype(np.float32)
+    cols = np.stack([(uniq >> 16) & 255, (uniq >> 8) & 255, uniq & 255], axis=1).astype(
+        np.float32
+    )
     near = np.empty(len(uniq), np.uint8)
     for i in range(0, len(uniq), 65536):
-        d = ((cols[i:i + 65536, None, :] - pal_rgb[None, :, :]) ** 2).sum(axis=2)
-        near[i:i + 65536] = d.argmin(axis=1).astype(np.uint8)
+        d = ((cols[i : i + 65536, None, :] - pal_rgb[None, :, :]) ** 2).sum(axis=2)
+        near[i : i + 65536] = d.argmin(axis=1).astype(np.uint8)
     return [near[np.searchsorted(uniq, p.ravel())].reshape(p.shape) for p in packed]
 
 
@@ -558,18 +662,22 @@ def pal_from(pixels, n):
     w = 2048
     h = (len(pixels) + w - 1) // w
     img = np.zeros((h * w, 3), np.uint8)
-    img[:len(pixels)] = pixels
-    img[len(pixels):] = pixels[0]
+    img[: len(pixels)] = pixels
+    img[len(pixels) :] = pixels[0]
     q = Image.fromarray(img.reshape(h, w, 3)).quantize(n, method=Image.MEDIANCUT)
-    return np.array(q.getpalette()[:n * 3], np.float32).reshape(n, 3)
+    return np.array(q.getpalette()[: n * 3], np.float32).reshape(n, 3)
 
 
 def write_gif(frames):
     px = np.concatenate([frames[i].reshape(-1, 3) for i in PAL_SAMPLES])
     lum = px.mean(axis=1)
     # split the palette so glow ramps and whites keep enough entries
-    pal_rgb = np.vstack([pal_from(px[lum > PAL_SPLIT_LUM], PAL_BRIGHT),
-                         pal_from(px[lum <= PAL_SPLIT_LUM], PAL_DARK)])
+    pal_rgb = np.vstack(
+        [
+            pal_from(px[lum > PAL_SPLIT_LUM], PAL_BRIGHT),
+            pal_from(px[lum <= PAL_SPLIT_LUM], PAL_DARK),
+        ]
+    )
     idx_frames = remap_exact(frames, pal_rgb)
     pal = pal_rgb.astype(np.uint8).ravel().tolist() + [255, 0, 255]
     imgs = []
@@ -580,14 +688,24 @@ def write_gif(frames):
         im.putpalette(pal)
         imgs.append(im)
         prev = idx
-    imgs[0].save(GIF_PATH, save_all=True, append_images=imgs[1:], duration=DUR_MS,
-                 loop=0, transparency=TRANSPARENT, disposal=1, optimize=False)
+    imgs[0].save(
+        GIF_PATH,
+        save_all=True,
+        append_images=imgs[1:],
+        duration=DUR_MS,
+        loop=0,
+        transparency=TRANSPARENT,
+        disposal=1,
+        optimize=False,
+    )
     return os.path.getsize(GIF_PATH)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--previews", action="store_true", help="render preview stills only")
+    ap.add_argument(
+        "--previews", action="store_true", help="render preview stills only"
+    )
     args = ap.parse_args()
 
     os.makedirs(PREVIEW_DIR, exist_ok=True)

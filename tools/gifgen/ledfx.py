@@ -65,8 +65,12 @@ def led_centers():
         tr, j = divmod(gy, TILE_LEDS)
         for gx in range(GRID_W):
             tc, i = divmod(gx, TILE_LEDS)
-            c[gy, gx, 0] = MARGIN + tc * (TILE_PX + SEAM) + TILE_PAD + i * PITCH + PITCH // 2
-            c[gy, gx, 1] = MARGIN + tr * (TILE_PX + SEAM) + TILE_PAD + j * PITCH + PITCH // 2
+            c[gy, gx, 0] = (
+                MARGIN + tc * (TILE_PX + SEAM) + TILE_PAD + i * PITCH + PITCH // 2
+            )
+            c[gy, gx, 1] = (
+                MARGIN + tr * (TILE_PX + SEAM) + TILE_PAD + j * PITCH + PITCH // 2
+            )
     return c
 
 

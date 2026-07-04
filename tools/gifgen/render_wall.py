@@ -44,10 +44,15 @@ def ensure_binary():
     if BINARY.exists() and BINARY.stat().st_mtime >= newest:
         return
     cmd = [
-        "g++", "-std=c++14", "-O2",
-        "-I", str(REPO / "modules" / "pong_screen"),
-        str(sources[0]), str(sources[1]),
-        "-o", str(BINARY),
+        "g++",
+        "-std=c++14",
+        "-O2",
+        "-I",
+        str(REPO / "modules" / "pong_screen"),
+        str(sources[0]),
+        str(sources[1]),
+        "-o",
+        str(BINARY),
     ]
     print("building:", " ".join(cmd))
     subprocess.run(cmd, check=True)
@@ -66,7 +71,9 @@ def run_dump(stride):
                 [bytes.fromhex(tok) for tok in lines[i + 1 + r].split()]
                 for r in range(ledfx.GRID_H)
             ]
-            frames.append(np.array([[list(px) for px in row] for row in rows], np.uint8))
+            frames.append(
+                np.array([[list(px) for px in row] for row in rows], np.uint8)
+            )
             i += 1 + ledfx.GRID_H
         else:
             i += 1
@@ -117,7 +124,9 @@ def chunk_scenes(merged):
     Each run shares one adaptive palette so Pillow delta-encodes within it."""
     chunks, cur, prev = [], [], None
     for f, ms in merged:
-        cut = prev is not None and int(np.any(f != prev, axis=2).sum()) > SCENE_CUT_CELLS
+        cut = (
+            prev is not None and int(np.any(f != prev, axis=2).sum()) > SCENE_CUT_CELLS
+        )
         if cur and (cut or len(cur) == CHUNK_MAX):
             chunks.append(cur)
             cur = []
@@ -154,7 +163,9 @@ def write_gif(frames, frame_ms, renderer):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stills-only", action="store_true")
-    ap.add_argument("--stride", type=int, default=2, help="engine ticks per dumped frame")
+    ap.add_argument(
+        "--stride", type=int, default=2, help="engine ticks per dumped frame"
+    )
     args = ap.parse_args()
 
     ensure_binary()
