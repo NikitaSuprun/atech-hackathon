@@ -1,0 +1,44 @@
+id: console_os
+name: "Brain OS — on-device shell"
+category: system
+interface: none
+size: 1
+description: |
+  The console's operating shell. Owns the fixed-rate loop (console::TICK_HZ):
+  samples Input, runs the active app's update()+draw() into one Color[SCREEN_PX]
+  framebuffer, and emits the frame (+ a brightness-adjusted LightProfile) to a
+  FrameSink. Ties the game library, themes, and menus together:
+    - MENU: enumerates the game registry (+ a SETTINGS row); one knob scrolls,
+      a press launches. Smooth, glowing, theme-styled.
+    - SETTINGS: runtime VOLUME (Audio::setVolume), BRIGHTNESS (rides the
+      LightProfile.wallBrightness), and a live THEME picker (ThemeManager) that
+      restyles the whole shell and persists the pick.
+    - OVERLAY: a reserved chord (both knob buttons) floats a Playdate-style
+      pause / resume / exit-to-menu over ANY running game without tearing it down.
+    - Persisted settings store: NVS on hardware, file/in-memory on the host.
+  Everything is drawn through theme tokens (t.c(ROLE_*), t.cat, t.ramp) — no hex.
+
+driver:
+  header: brain_os.h
+  source: brain_os.cpp
+  class_name: BrainOS
+
+lib_deps: []
+
+usage: |
+  GameRegistry reg;               registerBuiltinGames(reg);
+  ThemeManager themes(THEMES, THEME_COUNT);
+  BrainOS os(reg, themes, &audio, store, &screenSink);
+  os.begin();
+  // hardware loop: feed wall-clock + sampled input; the OS owns the fixed step
+  loop() { os.pump(millis(), input.sample()); }
+
+  // Control scheme (two rotary knobs, each a push button):
+  //   MENU     knob0 rotate = scroll list; knob0 press = launch / open settings
+  //   GAME     game-defined; both buttons held = open system overlay
+  //   OVERLAY  knob0 rotate = RESUME/EXIT; knob0 press = select
+  //   SETTINGS knob0 rotate = pick row (VOL/BRIGHT/THEME); knob1 rotate = adjust;
+  //            knob0 press = back to menu (persists)
+
+test: |
+  cd modules/console_os && make test   # headless acceptance test, CI gate

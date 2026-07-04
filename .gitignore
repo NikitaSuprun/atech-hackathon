@@ -20,3 +20,4 @@ tools/gifgen/preview/
 
 # screen_render host test binary
 modules/screen_render/test_console
+modules/console_os/os_test
