@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
                 ticksSinceHit++;
                 int defender = dirY > 0 ? 0 : 1;
                 int loser = pt < NUM_POINTS ? 1 - SCORER[pt] : -1;
-                double plane = loser == 0 ? H - 1.5 : 1.5;
+                double plane = loser == 0 ? H - PADDLE_PLANE_INSET : PADDLE_PLANE_INSET;
 
                 if (!frozen && haveBall && loser >= 0 && rallyHits >= QUOTA[pt] &&
                     ticksSinceHit > 10) {

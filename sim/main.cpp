@@ -16,6 +16,10 @@ using pong::EngineInputs;
 using pong::EngineStatus;
 using pong::Frame;
 
+static constexpr int LOG_LINES = 6;          // scrolling cue-log rows
+static constexpr int LOG_WIDTH = 64;         // chars per cue-log line
+static constexpr int MAX_CATCHUP_STEPS = 4;  // fixed-timestep catch-up cap
+
 static const char* STATE_NAMES[] = {
     "LINK_WAIT", "READY_CHECK", "COUNTDOWN", "PLAYING", "POINT_FLASH", "GAME_OVER"};
 
@@ -23,7 +27,7 @@ static uint8_t d8(uint8_t n, uint8_t o) { return (uint8_t)(n - o); }
 
 // ---------------- cue log (shared by selftest + interactive) ----------------
 
-static char logLines[6][64];
+static char logLines[LOG_LINES][LOG_WIDTH];
 static int logCount = 0;
 static int rally = 0;
 
@@ -32,9 +36,9 @@ static void logCue(const char* fmt, ...) {
     memmove(logLines[0], logLines[1], sizeof(logLines) - sizeof(logLines[0]));
     va_list ap;
     va_start(ap, fmt);
-    vsnprintf(logLines[5], sizeof(logLines[5]), fmt, ap);
+    vsnprintf(logLines[LOG_LINES - 1], sizeof(logLines[LOG_LINES - 1]), fmt, ap);
     va_end(ap);
-    if (logCount < 6) logCount++;
+    if (logCount < LOG_LINES) logCount++;
 }
 
 static void pollCues(const EngineStatus& st, EngineStatus& prev, bool print) {
@@ -50,7 +54,7 @@ static void pollCues(const EngineStatus& st, EngineStatus& prev, bool print) {
     if (d8(st.goalSeq, prev.goalSeq)) logCue("CUE: goal by P%d", st.goalBy + 1);
     if (d8(st.winSeq, prev.winSeq)) logCue("CUE: win P%d", st.winner + 1);
     if (print && logCount) {
-        puts(logLines[5]);
+        puts(logLines[LOG_LINES - 1]);
         logCount = 0;
     }
     prev = st;
@@ -82,15 +86,15 @@ static int selftest() {
     in.controllerLinked = true;
     EngineStatus prev = e.status();
 
-    e.tick(in, 20);
+    e.tick(in, TICK_MS);
     check(e.status().state == GS_READY_CHECK, "first linked input -> READY_CHECK");
 
     in.held[0] = in.held[1] = true;
-    for (int i = 0; i < 30; ++i) e.tick(in, 20);
+    for (int i = 0; i < 30; ++i) e.tick(in, TICK_MS);
     check(e.status().state == GS_COUNTDOWN, "both-hold 600ms -> COUNTDOWN");
 
     in.held[0] = in.held[1] = false;
-    for (int i = 0; i < 80 && e.status().state != GS_PLAYING; ++i) e.tick(in, 20);
+    for (int i = 0; i < 80 && e.status().state != GS_PLAYING; ++i) e.tick(in, TICK_MS);
     check(e.status().state == GS_PLAYING, "countdown elapses -> PLAYING");
     check(d8(e.status().serveSeq, prev.serveSeq) == 1, "serveSeq advanced once");
 
@@ -111,7 +115,7 @@ static int selftest() {
         }
         in.knobPos[0] = knob[0];
         in.knobPos[1] = knob[1];
-        e.tick(in, 20);
+        e.tick(in, TICK_MS);
         EngineStatus now = e.status();
         goals += d8(now.goalSeq, prev.goalSeq);
         serves += d8(now.serveSeq, prev.serveSeq);
@@ -128,18 +132,18 @@ static int selftest() {
 
     // rematch: both-hold after the celebration -> straight to COUNTDOWN, 0-0
     in.held[0] = in.held[1] = true;
-    for (int i = 0; i < 300 && e.status().state != GS_COUNTDOWN; ++i) e.tick(in, 20);
+    for (int i = 0; i < 300 && e.status().state != GS_COUNTDOWN; ++i) e.tick(in, TICK_MS);
     st = e.status();
     check(st.state == GS_COUNTDOWN, "rematch both-hold -> COUNTDOWN");
     check(st.score[0] == 0 && st.score[1] == 0, "rematch resets scores to 0-0");
 
     // link drop mid-countdown -> LINK_WAIT, relink -> READY_CHECK
     in.controllerLinked = false;
-    e.tick(in, 20);
+    e.tick(in, TICK_MS);
     check(e.status().state == GS_LINK_WAIT, "link drop -> LINK_WAIT");
     in.controllerLinked = true;
     in.held[0] = in.held[1] = false;
-    e.tick(in, 20);
+    e.tick(in, TICK_MS);
     check(e.status().state == GS_READY_CHECK, "relink -> READY_CHECK");
 
     printf(failures ? "SELFTEST FAILED (%d)\n" : "SELFTEST OK\n", failures);
@@ -205,7 +209,7 @@ int main(int argc, char** argv) {
         clock_gettime(CLOCK_MONOTONIC, &now);
         long behindMs = (now.tv_sec - next.tv_sec) * 1000 + (now.tv_nsec - next.tv_nsec) / 1000000;
         int steps = 1 + (int)(behindMs / (long)TICK_MS);
-        if (steps > 4) { steps = 4; next = now; }
+        if (steps > MAX_CATCHUP_STEPS) { steps = MAX_CATCHUP_STEPS; next = now; }
         for (int sIdx = 0; sIdx < steps; ++sIdx) {
             e.tick(in, TICK_MS);
             pollCues(e.status(), prev, false);

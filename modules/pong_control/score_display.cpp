@@ -6,23 +6,34 @@ static constexpr uint16_t COLOR_GRAY = 0x8410;
 static constexpr uint16_t P1_COLOR = ST7735_TFT::COLOR_CYAN;
 static constexpr uint16_t P2_COLOR = ST7735_TFT::COLOR_ORANGE;
 
-// score line: P1 digit / colon / P2 digit at fixed columns 44/68/92
+// ---- TFT layout (ST7735 160x80 landscape) ----
+static constexpr int16_t SCORE_X_P1    = 44;   // score columns: P1 digit / colon / P2 digit
+static constexpr int16_t SCORE_X_COLON = 68;
+static constexpr int16_t SCORE_X_P2    = 92;
+static constexpr int16_t HOLDBAR_W = 60;
+static constexpr int16_t HOLDBAR_H = 12;
+static constexpr uint8_t HOLD_Q_STEPS = 16;               // readyProgress quantized to 0..15
+static constexpr uint8_t HOLD_Q_FULL  = HOLD_Q_STEPS - 1; // full bar -> READY
+static constexpr int16_t TITLE_X = 44;         // boot "PONG" banner
+static constexpr int16_t TITLE_Y = 10;
+
+// score line: P1 digit / colon / P2 digit at the SCORE_X_* columns
 static void scoreLine(ST7735_TFT* tft, uint8_t s0, uint8_t s1, int16_t y, uint8_t size) {
     char buf[4];
     snprintf(buf, sizeof(buf), "%u", (unsigned)s0);
-    tft->displayText(buf, 44, y, size, P1_COLOR);
-    tft->displayText(":", 68, y, size, ST7735_TFT::COLOR_WHITE);
+    tft->displayText(buf, SCORE_X_P1, y, size, P1_COLOR);
+    tft->displayText(":", SCORE_X_COLON, y, size, ST7735_TFT::COLOR_WHITE);
     snprintf(buf, sizeof(buf), "%u", (unsigned)s1);
-    tft->displayText(buf, 92, y, size, P2_COLOR);
+    tft->displayText(buf, SCORE_X_P2, y, size, P2_COLOR);
 }
 
-// 60x12 hold bar; q is readyProgress/16 (0..15); full bar snaps to 60 px + READY
+// hold bar (HOLDBAR_W x HOLDBAR_H); q = readyProgress/HOLD_Q_STEPS (0..15); full -> READY
 static void holdBar(ST7735_TFT* tft, int16_t x, int16_t y, uint8_t q, uint16_t color) {
-    tft->drawRect(x, y, 60, 12, color);
-    int16_t w = (q >= 15) ? 60 : (int16_t)(q * 60 / 16);
+    tft->drawRect(x, y, HOLDBAR_W, HOLDBAR_H, color);
+    int16_t w = (q >= HOLD_Q_FULL) ? HOLDBAR_W : (int16_t)(q * HOLDBAR_W / HOLD_Q_STEPS);
     if (w > 0)
-        tft->fillRect(x, y, w, 12, color);
-    if (q >= 15)
+        tft->fillRect(x, y, w, HOLDBAR_H, color);
+    if (q >= HOLD_Q_FULL)
         tft->displayText("READY", x + 14, y + 2, 1, ST7735_TFT::COLOR_BLACK);
 }
 
@@ -31,7 +42,7 @@ void ScoreDisplay::begin(ST7735_TFT* tft) {
     // driver boots in rotation 3 (160x80 landscape); re-assert defensively
     tft_->setRotation(3);
     tft_->clear();
-    tft_->displayText("PONG", 44, 10, 3, ST7735_TFT::COLOR_WHITE);
+    tft_->displayText("PONG", TITLE_X, TITLE_Y, 3, ST7735_TFT::COLOR_WHITE);
     tft_->displayText("connecting...", 40, 50, 1, COLOR_GRAY);
     tft_->display();
 }
@@ -44,8 +55,8 @@ void ScoreDisplay::apply(const PongFeedbackPacket& snap, const PongCues& cues, b
     m.s0 = snap.score[0];
     m.s1 = snap.score[1];
     m.held = snap.heldBits;
-    m.hold0q = (uint8_t)(snap.readyProgress[0] / 16);
-    m.hold1q = (uint8_t)(snap.readyProgress[1] / 16);
+    m.hold0q = (uint8_t)(snap.readyProgress[0] / HOLD_Q_STEPS);
+    m.hold1q = (uint8_t)(snap.readyProgress[1] / HOLD_Q_STEPS);
     m.winner = snap.winner;
     m.linked = linked;
     if (m != last_) {
