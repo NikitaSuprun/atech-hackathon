@@ -10,11 +10,14 @@
 //   - priority WIN > POINT > READY/SERVE cues > blips; stop() before any RTTTL;
 //     suppress blips while a jingle plays (isPlaying() + own flag)
 //   - local countdown ticks: on entering GS_COUNTDOWN, schedule 3-2-1 ticks by dtMs
-//   - volume stays <= 0.5f (bundled setup already set 0.4f)
+//   - volume <= 0.5f; begin() lowers the setup's 0.4f default to 0.2f
 
 class AudioDirector {
 public:
-    void begin(Speaker* spk) { spk_ = spk; }
+    void begin(Speaker* spk) {
+        spk_ = spk;
+        spk_->setVolume(0.2f);  // quieter than the module setup's default 0.4f
+    }
     void apply(const PongFeedbackPacket& snap, const PongCues& cues, uint32_t dtMs);
 
     // ---------------- lane D owns everything below ----------------
