@@ -14,6 +14,7 @@ constexpr float    DT      = 1.0f / TICK_HZ;
 // ---------------- paddles & knobs ----------------
 constexpr int   PADDLE_W         = 2;             // px on the 6-wide edge (3 = casual mode)
 constexpr float PADDLE_GRACE     = 0.35f;         // extra half-width; edge-graze = max english
+constexpr float PADDLE_PLANE_INSET = 1.5f;        // ball-center contact plane, inset from each edge
 constexpr float DETENTS_PER_CELL = 2.0f;          // full 4-cell sweep = 8 detents ~= 160 deg
 constexpr int   KNOB_SIGN[2]     = {+1, +1};      // flip per side on hardware day
 // Engine input contract: knob acceleration is DISABLED on the controller
@@ -26,6 +27,7 @@ constexpr float BALL_SPEED_MAX   = 22.0f;         // ~0.44 cells/tick — no tun
 constexpr float ENGLISH_GAIN     = 0.85f;         // u -> horizontal component gain
 constexpr float VY_MIN           = 0.55f;         // vertical fraction floor (no sideways stalls)
 constexpr float SERVE_U[2]       = {0.35f, 0.70f}; // |serve english|, pick + sign randomized
+constexpr float WALL_INSET       = 0.5f;          // side-wall reflection plane (ball center)
 
 // ---------------- match & ceremony (ms) ----------------
 // WIN_SCORE lives in pong_proto.h (PONG_WIN_SCORE = 3) — it is wire-visible.
@@ -34,6 +36,22 @@ constexpr uint32_t POINT_FLASH_MS       = 1200;
 constexpr uint32_t WIN_CELEBRATION_MS   = 3000;   // then GAME_OVER waits for both-hold
 constexpr uint32_t IDLE_TO_ATTRACT_MS   = 30000;  // READY_CHECK idle -> demo rally
 constexpr uint32_t STALE_HOLD_RESET_MS  = 1000;   // stale link: freeze holds, then zero them
+
+// ---------------- animation feel ----------------
+constexpr uint32_t BLINK_MS = 125;                // 4 Hz blink (glued ball, newest pip)
+constexpr float LINKWAIT_BREATHE_BASE = 0.25f;    // LINK_WAIT dim: base + amp * unit-sine
+constexpr float LINKWAIT_BREATHE_AMP  = 0.2f;
+constexpr float LINKWAIT_BREATHE_RATE = 0.0015f;
+constexpr float READY_PULSE_RATE      = 0.0031416f; // ~0.5 Hz ready-paddle pulse (2*pi*0.5/1000)
+constexpr uint32_t GAMEOVER_SWEEP_ROWS_PER_S = 8; // winner-edge band chase speed
+constexpr int GAMEOVER_BAND = 3;                  // rows in the sweep band
+
+// ---------------- attract ----------------
+constexpr float ATTRACT_WOBBLE_AMP   = 0.6f;      // demo defender wobble amplitude
+constexpr float ATTRACT_WOBBLE_RATE  = 0.003f;
+constexpr float ATTRACT_WOBBLE_PHASE = 2.1f;      // per-side phase offset
+constexpr float ATTRACT_PADDLE_SPEED = 6.0f;      // cells/s demo paddle tracking
+constexpr int   ATTRACT_FORCE_MISS_EVERY = 3;     // defender whiffs every Nth rally
 
 // ---------------- palette ----------------
 // Wall brightness is hard-clamped to 51/255 (~20%) by the NeoPixel driver: effective
