@@ -107,6 +107,13 @@ PAD: Final[int] = 14
 SPK: Final[tuple[float, float]] = (92.0, 476.0)
 SPK_PITCH: Final[int] = 11
 
+# comparison thresholds lifted out of the drawing math
+SHRINK_MIN_SCALE: Final[int] = 3
+SCREW_SLOT_HW: Final[float] = 1.2
+COUNT_FLASH_FRAMES: Final[int] = 2
+MIN_PULSE_W: Final[float] = 0.02
+MIN_RING_A: Final[float] = 0.03
+
 
 class KnobFrame(TypedDict):
     press: float
@@ -260,7 +267,7 @@ def draw_text(
 ) -> None:
     x0 = int(round(cx - text_w(s, scale) / 2))
     y0 = int(round(cy - 3.5 * scale))
-    sz = max(1, scale - 1) if scale >= 3 else scale
+    sz = max(1, scale - 1) if scale >= SHRINK_MIN_SCALE else scale
     for i, ch in enumerate(s):
         col = colors[i] if isinstance(colors, list) else colors
         for ry, row in enumerate(FONT[ch]):
@@ -374,7 +381,8 @@ def build_static() -> tuple[F64, F64, F64, F64]:
         )
         u = (sdx[None, :] + sdy[:, None]) / math.sqrt(2)
         v = (sdx[None, :] - sdy[:, None]) / math.sqrt(2)
-        slot = ((np.abs(u) < 1.2) | (np.abs(v) < 1.2)) & (rr < r - 1)
+        on_slot = (np.abs(u) < SCREW_SLOT_HW) | (np.abs(v) < SCREW_SLOT_HW)
+        slot = on_slot & (rr < r - 1)
         met = np.where(slot[..., None], met * 0.35, met)
         reg[:] = reg * (1 - a) + met * a
 
@@ -602,7 +610,7 @@ def tft_layer(f: int) -> F64:
         draw_text(t, "START", cx, cy + 13, 3, WHITE * 0.95, inten)
     elif f < COUNT_END:
         age = (f - HOLD_END) % COUNT_STEP
-        inten = 4.2 if age < 2 else 2.6
+        inten = 4.2 if age < COUNT_FLASH_FRAMES else 2.6
         draw_text(t, "321"[(f - HOLD_END) // COUNT_STEP], cx, cy, 10, WHITE, inten)
     elif in_rally(f):
         s = "0:0" if f < RALLY1_END else ("1:0" if f < RALLY2_END else "2:1")
@@ -664,7 +672,7 @@ def speaker_fx(buf: F64, f: int) -> None:
                 for j in range(5):
                     d = math.hypot(i - 2, j - 2)
                     w = math.exp(-((a * 0.55 - d) ** 2) / 1.4) * env
-                    if w > 0.02:
+                    if w > MIN_PULSE_W:
                         glow(
                             buf,
                             SPK[0] + (i - 2) * SPK_PITCH,
@@ -701,7 +709,7 @@ def draw_all(f: int, p: KnobFrame, static: F64, spill: F64) -> F64:
             arr, col = ov
             gain = 1.0
         for k in range(RING_LEDS):
-            if arr[k] > 0.03:
+            if arr[k] > MIN_RING_A:
                 x, y = ring_pos(center, k)
                 glow(buf, x, y, col, arr[k] * gain * 0.95, 0.55)
     add_tft(buf, tft_layer(f), spill)

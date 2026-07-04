@@ -45,6 +45,13 @@ SLOT_HY: Final[float] = 0.062
 P7_RECT: Final[tuple[float, float, float, float]] = (0.428, 0.058, 0.586, 0.152)
 P8_RECT: Final[tuple[float, float, float, float]] = (0.428, 0.849, 0.586, 0.940)
 
+# port numbers pulled out of the routing logic + TILE_MAP 180-degree rot code
+PORT_P7: Final[int] = 7
+PORT_P8: Final[int] = 8
+PORT_BOTTOM_RUN: Final[int] = 14
+MAX_LEFT_PORT: Final[int] = 6
+ROT_180: Final[int] = 2
+
 BOARD_W: Final[int] = 210
 BOARD_H: Final[int] = 420
 
@@ -94,7 +101,8 @@ FONT_REG: Final[str] = "/System/Library/Fonts/Supplemental/Arial.ttf"
 _fonts: dict[tuple[float, bool], ImageFont.FreeTypeFont] = {}
 
 
-def F(size: float, bold: bool = False) -> ImageFont.FreeTypeFont:
+# F: terse font factory, matching this script's sc()/bez()/dot() helpers
+def F(size: float, bold: bool = False) -> ImageFont.FreeTypeFont:  # noqa: N802
     key = (size, bold)
     if key not in _fonts:
         _fonts[key] = ImageFont.truetype(
@@ -270,16 +278,17 @@ def round_rect(
 
 
 def slot_rect(bx: float, by: float, port: int) -> tuple[float, float, float, float]:
-    if port in (7, 8):
-        f = P7_RECT if port == 7 else P8_RECT
+    if port in (PORT_P7, PORT_P8):
+        f = P7_RECT if port == PORT_P7 else P8_RECT
         return (
             bx + f[0] * BOARD_W,
             by + f[1] * BOARD_H,
             bx + f[2] * BOARD_W,
             by + f[3] * BOARD_H,
         )
-    col = SLOT_LX if port <= 6 else SLOT_RX
-    yc = by + PORT_ROW_Y[(port - 1) if port <= 6 else (port - 9)] * BOARD_H
+    col = SLOT_LX if port <= MAX_LEFT_PORT else SLOT_RX
+    row = (port - 1) if port <= MAX_LEFT_PORT else (port - 9)
+    yc = by + PORT_ROW_Y[row] * BOARD_H
     return (
         bx + col[0] * BOARD_W,
         yc - SLOT_HY * BOARD_H,
@@ -289,7 +298,8 @@ def slot_rect(bx: float, by: float, port: int) -> tuple[float, float, float, flo
 
 
 def port_y(by: float, port: int) -> float:
-    return by + PORT_ROW_Y[(port - 1) if port <= 6 else (port - 9)] * BOARD_H
+    row = (port - 1) if port <= MAX_LEFT_PORT else (port - 9)
+    return by + PORT_ROW_Y[row] * BOARD_H
 
 
 def highlight_ports(
@@ -367,7 +377,7 @@ def draw_wall(
         ry = ROW_C[row] + 16
         tx = TRUNK_X[row]
         pts: list[tuple[float, float]]
-        if port == 14:
+        if port == PORT_BOTTOM_RUN:
             pts = [
                 (GRID_R - 4, ry),
                 (tx, ry),
@@ -376,8 +386,8 @@ def draw_wall(
                 (BOTTOM_UP_X, port_y(by, port)),
                 (HOOK_X, port_y(by, port)),
             ]
-        elif port == 7:
-            r7 = slot_rect(bx, by, 7)
+        elif port == PORT_P7:
+            r7 = slot_rect(bx, by, PORT_P7)
             p7x = (r7[0] + r7[2]) / 2
             pts = [
                 (GRID_R - 4, ry),
@@ -415,7 +425,7 @@ def draw_wall(
         for col in range(2):
             x = GRID_X + col * (TILE + SEAM)
             y = GRID_Y + row * (TILE + SEAM)
-            img = tile_img.rotate(180) if rot_at[(row, col)] == 2 else tile_img
+            img = tile_img.rotate(180) if rot_at[(row, col)] == ROT_180 else tile_img
             paste_shadowed(canvas, img, x, y, blur=7, dy=4, alpha=120)
     paste_shadowed(canvas, board_img, bx, by)
 
@@ -431,7 +441,7 @@ def draw_wall(
         )
 
     # rotate icon on each rotated tile, plus a label above the column
-    rot_col = next((c for _, c, rot in game.TILE_MAP if rot == 2), 1)
+    rot_col = next((c for _, c, rot in game.TILE_MAP if rot == ROT_180), 1)
     col_cx = GRID_X + rot_col * (TILE + SEAM) + TILE / 2  # rotated column's center x
     for row in range(6):
         rotate_icon(d_over, col_cx, GRID_Y + row * (TILE + SEAM) + TILE / 2)
@@ -738,7 +748,7 @@ def draw_footer(
     ]
     chip = 52
     widths = []
-    for _img, count, name in items:
+    for _, count, name in items:
         tw = F(15, True).getlength(count) / SS + 4 + F(15).getlength(name) / SS
         widths.append(chip + 10 + tw)
     gap = 46

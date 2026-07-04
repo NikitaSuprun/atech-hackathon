@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Final
 
@@ -21,7 +22,7 @@ from PIL import Image
 from gifgen import game, ledfx, paths
 from gifgen.arrays import F32, U8, Frame
 
-BINARY: Final[Path] = Path("/tmp/dump_frames")
+BINARY: Final[Path] = Path(tempfile.gettempdir()) / "dump_frames"
 GIF_PATH: Final[Path] = paths.ASSETS / "pong.gif"
 CXX: Final[str] = "g++"
 CXX_FLAGS: Final[list[str]] = ["-std=c++14", "-O2"]
@@ -60,11 +61,13 @@ def ensure_binary() -> None:
         str(BINARY),
     ]
     print("building:", " ".join(cmd))
-    subprocess.run(cmd, check=True)
+    # local, trusted g++ build of our own sources
+    subprocess.run(cmd, check=True)  # noqa: S603
 
 
 def run_dump(stride: int) -> tuple[list[Frame], dict[str, int]]:
-    proc = subprocess.run(
+    # runs our own freshly-built binary with a numeric stride arg
+    proc = subprocess.run(  # noqa: S603
         [str(BINARY), str(stride)], capture_output=True, text=True, check=True
     )
     frames: list[Frame] = []
