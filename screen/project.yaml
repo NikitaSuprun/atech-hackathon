@@ -1,0 +1,22 @@
+name: pong-screen
+board: 14port
+modules_path:
+  - ../modules
+modules:
+  # 12 Light Grid tiles, instances PORT-NAMED (g<port>). Hardware-day remapping
+  # of tile positions/rotations happens ONLY in modules/pong_screen/pong_config.h
+  # (TILE_MAP) — never rename instances here.
+  - {id: neopixel, instance: g1,  port: 1}
+  - {id: neopixel, instance: g2,  port: 2}
+  - {id: neopixel, instance: g3,  port: 3}
+  - {id: neopixel, instance: g4,  port: 4}
+  - {id: neopixel, instance: g5,  port: 5}
+  - {id: neopixel, instance: g6,  port: 6}
+  - {id: neopixel, instance: g7,  port: 7}
+  - {id: neopixel, instance: g9,  port: 9}
+  - {id: neopixel, instance: g10, port: 10}
+  - {id: neopixel, instance: g11, port: 11}
+  - {id: neopixel, instance: g13, port: 13}
+  # The game module hosts the 12th grid on its own port. MUST BE LAST —
+  # its setup template references every g* instance above (add-order).
+  - {id: pong_screen, instance: pong, port: 14}

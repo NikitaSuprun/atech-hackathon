@@ -1,0 +1,38 @@
+id: pong_control
+name: "Pong Controller Uplink + Presenters"
+category: connectivity
+interface: gpio
+size: 1
+description: |
+  Controller console module: WiFi STA + UDP uplink to the Pong screen board
+  (absolute knob positions + button held levels at 50 Hz), plus three
+  event-driven presenters fed by the 20 Hz feedback stream through an
+  exactly-once tracker: AudioDirector (speaker), ScoreDisplay (TFT), RingFX
+  (knob LED rings). Occupies one spare port; its pins are unused.
+
+driver:
+  header: pong_control.h
+  source: pong_control.cpp
+  class_name: PongControl
+
+templates:
+  globals: |
+    PongControl {{ instance }};
+  setup: |
+    knob_p1.setAcceleration(false, 1);
+    knob_p2.setAcceleration(false, 1);
+    {{ instance }}.begin(&knob_p1, &knob_p2, &speaker_1, &tft_1);
+  loop: |
+    {{ instance }}.service(
+        knob_p1.getPosition(), knob_p1.isPressed(),
+        knob_p2.getPosition(), knob_p2.isPressed());
+
+events: []
+actions: []
+lib_deps: []
+
+usage: |
+  // Fully automatic. Reads LEVELS only (the bundled knob template already
+  // consumed the wasPressed() edges). TFT shows score/state, speaker plays
+  // event motifs (never on boot), rings show link state, ready-hold progress,
+  // score dial, and goal/win effects.

@@ -1,0 +1,26 @@
+name: pong-controller
+board: 14port
+modules_path:
+  - ../modules
+modules:
+  - id: rotary_encoder
+    instance: knob_p1
+    ports: [1, 2]
+  - id: rotary_encoder
+    instance: knob_p2
+    ports: [9, 10]   # NOTE: user recalled (8,9) but port_8 is the reserved USB-C
+                     # slot on the 14port board. If the knob physically sits
+                     # elsewhere on hardware day, the only other valid right-column
+                     # pair left is [10, 11] — change this ONE line and re-validate.
+  - id: speaker
+    instance: speaker_1
+    ports: [4, 5]
+  - id: st7735_tft
+    instance: tft_1
+    ports: [13, 14]
+  # Virtual uplink + presenters. MUST BE LAST — its templates reference every
+  # instance above (add-order). Port 7 is the free middle slot; pins unused.
+  # Remaining free ports: 3, 6, 11.
+  - id: pong_control
+    instance: pongc
+    port: 7

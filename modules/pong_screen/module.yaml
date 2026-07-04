@@ -1,0 +1,43 @@
+id: pong_screen
+name: "Pong Screen Engine + 12th Grid"
+category: display
+interface: gpio
+size: 1
+description: |
+  Pong game server module. Because all 12 usable ports on the screen board carry
+  Light Grid tiles, this module IS the 12th grid: it instantiates a NeoPixelGrid
+  on its own port AND the game engine. Owns the pure-C++ engine (first to 3,
+  both-hold ready gate), the 6x18 compositor (per-tile rotation + dirty cache),
+  a WiFi SoftAP and the UDP server (input 50 Hz in, feedback 20 Hz out).
+
+driver:
+  header: pong_screen.h
+  source: pong_screen.cpp
+  class_name: PongScreen
+
+templates:
+  globals: |
+    NeoPixelGrid {{ instance }}_grid({{ pin_a }}, {{ pin_b }});
+    PongScreen {{ instance }};
+  setup: |
+    {{ instance }}_grid.begin();
+    {
+      NeoPixelGrid* _t[12] = { &g1, &g2, &g3, &g4, &g5, &g6,
+                               &g7, &g9, &g10, &g11, &g13, &{{ instance }}_grid };
+      {{ instance }}.begin(_t, 12);
+    }
+  loop: |
+    {{ instance }}.tick();
+
+events: []
+actions: []
+lib_deps:
+  - "adafruit/Adafruit NeoPixel"
+
+health_check: "{{ instance }}.ok()"
+
+usage: |
+  // Fully automatic game server; nothing to call from user code.
+  // {{ instance }}.ok() is true when all 12 tiles are bound and the SoftAP started.
+  // Tile order in the pointer array = port order 1,2,3,4,5,6,7,9,10,11,13,14 and
+  // must match TILE_MAP in pong_config.h.
