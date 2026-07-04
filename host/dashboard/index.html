@@ -1,0 +1,848 @@
+<meta charset="utf-8">
+<title>Atech Arcade — Console Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#08080a;
+    --panel:#101014;
+    --panel2:#0b0b0e;
+    --ink:#ececef;
+    --muted:#8a8b95;
+    --line:rgba(255,255,255,.09);
+    --line2:rgba(255,255,255,.05);
+    --font-ui: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --font-mono: ui-monospace,"SF Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
+    /* theme-driven accents (set from JS) */
+    --accent:#ffb23e; --accent2:#ff6a3d; --p1:#ffb23e; --p2:#ff6a3d; --ball:#fff1d6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 50% -12%, #14141f 0%, rgba(19,19,32,0) 62%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    min-height:100%;
+    padding:clamp(14px,2.4vw,30px);
+  }
+  .wrap{max-width:1360px;margin:0 auto}
+
+  /* ---- header ---- */
+  header{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+  .brand{display:flex;flex-direction:column;gap:5px;margin-right:auto}
+  .eyebrow{
+    font-family:var(--font-mono);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--muted);display:flex;align-items:center;gap:.7em;
+  }
+  .eyebrow::before{content:"";width:24px;height:1px;background:linear-gradient(90deg,var(--accent),transparent);transition:background .4s}
+  h1{font-size:clamp(1.3rem,3vw,1.9rem);line-height:1;letter-spacing:-.02em;margin:0;font-weight:640}
+  h1 b{color:var(--accent);transition:color .4s;text-shadow:0 0 22px color-mix(in srgb,var(--accent) 45%,transparent)}
+
+  .status{
+    display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:.76rem;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:99px;padding:7px 14px 7px 12px;background:var(--panel2);
+  }
+  .status .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 0 transparent}
+  .status.mock .dot{background:#ffb23e;box-shadow:0 0 10px #ffb23e}
+  .status.live .dot{background:#41f58a;box-shadow:0 0 10px #41f58a}
+  .status.wait .dot{background:#5b9dff;animation:pulse 1s infinite}
+  .status.err  .dot{background:#ff4d4d;box-shadow:0 0 10px #ff4d4d}
+  .status.off  .dot{background:#555}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+  button.btn{
+    font-family:var(--font-mono);font-size:.78rem;letter-spacing:.04em;color:var(--ink);
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 15px;cursor:pointer;
+    transition:border-color .18s,background .18s,box-shadow .18s,color .18s;
+  }
+  button.btn:hover{border-color:color-mix(in srgb,var(--accent) 60%,transparent);box-shadow:0 0 18px -6px var(--accent)}
+  button.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+  button.btn.primary{border-color:color-mix(in srgb,var(--accent) 50%,transparent);color:var(--accent)}
+  button.btn.on{background:color-mix(in srgb,var(--accent) 16%,var(--panel));border-color:var(--accent);color:var(--accent)}
+
+  /* ---- layout ---- */
+  .grid{display:grid;grid-template-columns:minmax(210px,270px) minmax(320px,1fr) minmax(280px,330px);gap:16px;align-items:start}
+  @media (max-width:1120px){.grid{grid-template-columns:minmax(200px,250px) 1fr}}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;
+    box-shadow:0 24px 60px -34px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.03);}
+  .panel + .panel{margin-top:16px}
+  .col{display:flex;flex-direction:column}
+  .plabel{
+    font-family:var(--font-mono);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:.6em;margin:0 0 13px;
+  }
+  .plabel::before{content:"";width:16px;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
+  .plabel .sp{margin-left:auto;color:var(--muted);letter-spacing:.08em;opacity:.8;text-transform:none;font-size:.66rem}
+
+  /* ---- mirror ---- */
+  .bezel{
+    position:relative;background:#050506;border-radius:14px;border:1px solid rgba(255,255,255,.06);
+    padding:16px;display:grid;place-items:center;
+    box-shadow:inset 0 2px 16px rgba(0,0,0,.75), inset 0 0 0 6px #0a0a0c;
+  }
+  .bezel::after{content:"";position:absolute;inset:6px;border-radius:10px;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 3px,rgba(0,0,0,.14) 3px 4px);mix-blend-mode:multiply;opacity:.5}
+  #screen{display:block;width:auto;max-height:min(58vh,520px);border-radius:4px}
+  .cap{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:13px;
+    font-family:var(--font-mono);font-size:.68rem;color:var(--muted)}
+  .cap b{color:var(--ink);font-weight:600}
+  .cap .full{grid-column:1/-1;color:var(--muted);opacity:.75;letter-spacing:.04em}
+  .toggle{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:var(--font-mono);font-size:.72rem;color:var(--muted);cursor:pointer;user-select:none}
+  .toggle input{accent-color:var(--accent)}
+
+  /* ---- tft + rings ---- */
+  .tft{
+    position:relative;margin:0 auto;width:100%;max-width:280px;aspect-ratio:160/80;border-radius:9px;
+    background:radial-gradient(120% 140% at 50% 0%, #14141a, #050507);
+    border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 0 24px rgba(0,0,0,.8), 0 0 30px -14px var(--accent);
+    display:grid;grid-template-rows:auto 1fr auto;padding:10px 12px;overflow:hidden;
+  }
+  .tft::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,0) 0 2px,rgba(255,255,255,.02) 2px 3px)}
+  .tft .row{display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);z-index:1}
+  .tft .score{display:flex;align-items:center;justify-content:center;gap:.14em;font-family:var(--font-mono);font-weight:700;font-size:clamp(1.9rem,7vw,2.7rem);line-height:1;letter-spacing:.02em;z-index:1}
+  .tft .score .s0{color:var(--p1);text-shadow:0 0 16px color-mix(in srgb,var(--p1) 60%,transparent)}
+  .tft .score .s1{color:var(--p2);text-shadow:0 0 16px color-mix(in srgb,var(--p2) 60%,transparent)}
+  .tft .score .cn{color:#fff;opacity:.85}
+  .tft .st{text-align:center;color:var(--accent);font-weight:600}
+  .lnk{display:inline-flex;align-items:center;gap:5px}
+  .lnk i{width:7px;height:7px;border-radius:50%;background:#444;display:inline-block}
+  .lnk.up i{background:#41f58a;box-shadow:0 0 8px #41f58a}
+
+  .rings{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+  .ring{display:flex;flex-direction:column;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:11px 8px 9px}
+  .ring canvas{width:100%;max-width:118px;height:auto}
+  .ring .rl{font-family:var(--font-mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .ring .rv{font-family:var(--font-mono);font-size:.72rem;color:var(--ink)}
+
+  /* ---- stat tiles ---- */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:15px}
+  @media (max-width:520px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:9px 10px;min-width:0}
+  .tile .k{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .tile .v{font-family:var(--font-mono);font-size:.94rem;font-weight:600;color:var(--ink);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .v.acc{color:var(--accent)}
+
+  /* ---- logs ---- */
+  #logs{font-family:var(--font-mono);font-size:.71rem;line-height:1.62;height:clamp(200px,30vh,340px);overflow-y:auto;
+    background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+  #logs .ln{display:flex;gap:9px}
+  #logs .t{color:#5a5b66;flex:0 0 auto}
+  #logs .tag{flex:0 0 auto;width:30px}
+  #logs .rx .tag{color:#5b9dff}
+  #logs .tx .tag{color:var(--accent)}
+  #logs .sy .tag{color:#8a8b95}
+  #logs .er .tag{color:#ff6a6a}
+  #logs .m{color:#c7c9d2}
+  #logs::-webkit-scrollbar{width:9px}
+  #logs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:9px}
+
+  /* ---- controls ---- */
+  .field{margin-bottom:16px}
+  .field:last-child{margin-bottom:0}
+  .field > label{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:8px}
+  .field > label b{color:var(--accent);font-weight:600}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;
+    background:linear-gradient(90deg,var(--accent) var(--fill,60%),rgba(255,255,255,.1) var(--fill,60%));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;
+    border:2px solid var(--accent);box-shadow:0 0 12px var(--accent);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid var(--accent);box-shadow:0 0 12px var(--accent);cursor:pointer}
+  select{width:100%;font-family:var(--font-mono);font-size:.82rem;color:var(--ink);background:var(--panel2);
+    border:1px solid var(--line);border-radius:10px;padding:10px 11px;cursor:pointer;appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  select:focus{border-color:var(--accent);outline:none}
+
+  .keys{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kgroup{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:11px}
+  .kgroup .kh{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:9px}
+  .kgroup.p1 .kh{color:var(--p1)}
+  .kgroup.p2 .kh{color:var(--p2)}
+  .krow{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-family:var(--font-mono);font-size:.66rem;color:var(--muted)}
+  .krow:last-child{margin-bottom:0}
+  kbd{font-family:var(--font-mono);font-size:.68rem;min-width:22px;text-align:center;color:var(--ink);
+    background:#17171c;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:3px 6px;transition:all .08s}
+  kbd.hot{background:var(--accent);color:#08080a;border-color:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .hint{font-family:var(--font-mono);font-size:.62rem;color:var(--muted);opacity:.75;margin-top:10px;line-height:1.5}
+  .warn{font-family:var(--font-mono);font-size:.66rem;color:#ffcf7a;background:rgba(255,178,62,.08);border:1px solid rgba(255,178,62,.25);border-radius:9px;padding:9px 11px;margin-bottom:14px;display:none}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Atech Arcade · console platform</div>
+      <h1>Console <b>Dashboard</b></h1>
+    </div>
+    <div class="status off" id="status"><span class="dot"></span><span id="statusText">idle</span></div>
+    <button class="btn on" id="btnMock">Mock: ON</button>
+    <button class="btn primary" id="btnConnect">Connect device</button>
+    <button class="btn" id="btnDisconnect" disabled>Disconnect</button>
+  </header>
+
+  <div class="warn" id="warn"></div>
+
+  <div class="grid">
+
+    <!-- LEFT: live mirror -->
+    <section class="col">
+      <div class="panel">
+        <p class="plabel">Live mirror <span class="sp">6 × 18 · RGB565</span></p>
+        <div class="bezel"><canvas id="screen" width="156" height="468"></canvas></div>
+        <div class="cap">
+          <div>frame <b id="capSeq">—</b></div>
+          <div>fps <b id="capFps">—</b></div>
+          <div>pkts/s <b id="capPps">—</b></div>
+          <div>src <b id="capSrc">mock</b></div>
+          <div class="full">COBS-framed · FrameHeader → RGB565 payload</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="trails" checked> phosphor trails (theme decay)</label>
+      </div>
+    </section>
+
+    <!-- MIDDLE: controller state + telemetry + logs -->
+    <section class="col">
+      <div class="panel">
+        <p class="plabel">Controller TFT <span class="sp">ST7735 · 160×80</span></p>
+        <div class="tft">
+          <div class="row"><span id="tftTitle">PONG</span><span class="lnk" id="tftLink"><i></i>link</span></div>
+          <div class="score"><span class="s0" id="tftS0">0</span><span class="cn">:</span><span class="s1" id="tftS1">0</span></div>
+          <div class="row"><span class="st" id="tftState">LINK WAIT</span></div>
+        </div>
+        <div class="rings">
+          <div class="ring"><canvas id="ring0" width="118" height="118"></canvas><span class="rl">Knob 0 · P1</span><span class="rv" id="rv0">0</span></div>
+          <div class="ring"><canvas id="ring1" width="118" height="118"></canvas><span class="rl">Knob 1 · P2</span><span class="rv" id="rv1">0</span></div>
+        </div>
+        <div class="tiles">
+          <div class="tile"><div class="k">state</div><div class="v acc" id="tState">—</div></div>
+          <div class="tile"><div class="k">score</div><div class="v" id="tScore">0 : 0</div></div>
+          <div class="tile"><div class="k">theme</div><div class="v" id="tTheme">—</div></div>
+          <div class="tile"><div class="k">volume</div><div class="v" id="tVol">—</div></div>
+          <div class="tile"><div class="k">game id</div><div class="v" id="tGame">—</div></div>
+          <div class="tile"><div class="k">link</div><div class="v" id="tLink">—</div></div>
+          <div class="tile"><div class="k">fps</div><div class="v" id="tFps">—</div></div>
+          <div class="tile"><div class="k">seq</div><div class="v" id="tSeq">—</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="plabel">Telemetry log <span class="sp" id="logCount">0</span></p>
+        <div id="logs" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: controls -->
+    <section class="col">
+      <div class="panel">
+        <p class="plabel">Controls</p>
+        <div class="field">
+          <label>Volume <b id="volVal">60%</b></label>
+          <input type="range" id="vol" min="0" max="100" value="60">
+        </div>
+        <div class="field">
+          <label>Theme <b id="themeName">Warm Analog</b></label>
+          <select id="theme"></select>
+        </div>
+        <div class="field">
+          <label>Game <b>SELECT_GAME</b></label>
+          <select id="game"></select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="plabel">Keyboard → virtual controller</p>
+        <div class="keys">
+          <div class="kgroup p1">
+            <div class="kh">P1 · knob 0</div>
+            <div class="krow"><kbd data-k="a">A</kbd><kbd data-k="d">D</kbd> rotate</div>
+            <div class="krow"><kbd data-k="s">S</kbd> press</div>
+          </div>
+          <div class="kgroup p2">
+            <div class="kh">P2 · knob 1</div>
+            <div class="krow"><kbd data-k="arrowleft">←</kbd><kbd data-k="arrowright">→</kbd> rotate</div>
+            <div class="krow"><kbd data-k="arrowdown">↓</kbd> press</div>
+          </div>
+        </div>
+        <div class="hint">Hold to rotate continuously. Every change encodes an <b>INJECT_INPUT</b> packet (absolute detents + held bits) and drives the mock paddles.</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+
+// ============================================================================
+// Console wire protocol — mirrors include/console/frame_proto.h + host_proto.h
+// ============================================================================
+const SCREEN_W = 6, SCREEN_H = 18, SCREEN_PX = 108;
+
+const FRAME_MAGIC = 0x4D524643;            // 'C','F','R','M' little-endian
+const FRAME_VERSION = 1;
+const MSG_FRAME = 0x01, MSG_SET_LIGHT_PROFILE = 0x02;
+const FMT_RGB565 = 0;
+
+const HOST_MAGIC = 0x54534F48;             // 'H','O','S','T'
+const HOST_VERSION = 1;
+const HOST_SET_VOL = 0x10, HOST_SET_THEME = 0x11, HOST_INJECT_INPUT = 0x12,
+      HOST_SELECT_GAME = 0x13, BOARD_TELEMETRY = 0x20;
+
+const GAME_STATES = ["LINK WAIT","READY CHECK","COUNTDOWN","PLAYING","POINT FLASH","GAME OVER"];
+const GAMES = ["Pong","Snake","Flappy","Racing","Eggcatch","Jukebox","Demo"];
+
+// The five themes verbatim from include/console/themes.cpp (role colours + LightProfile).
+const THEMES = [
+  { name:"Warm Analog", bg:[22,16,10], dim:[74,56,38], accent:[255,178,62], accent2:[255,106,61], ink:[255,223,166],
+    p1:[255,178,62], p2:[255,106,61], ball:[255,241,214], net:[110,82,54],
+    light:{wall:52,dim:82,decay:210,bloom:150,gamma:120} },
+  { name:"Neon Coin-op", bg:[11,2,33], dim:[43,26,87], accent:[5,217,232], accent2:[255,46,151], ink:[223,254,255],
+    p1:[5,217,232], p2:[255,46,151], ball:[242,242,255], net:[74,46,140],
+    light:{wall:58,dim:72,decay:70,bloom:72,gamma:90} },
+  { name:"Mono Glow", bg:[12,13,15], dim:[38,40,48], accent:[244,245,247], accent2:[199,255,77], ink:[244,245,247],
+    p1:[244,245,247], p2:[199,255,77], ball:[255,255,255], net:[108,111,120],
+    light:{wall:50,dim:78,decay:90,bloom:40,gamma:100} },
+  { name:"DMG Green", bg:[15,56,15], dim:[48,98,48], accent:[155,188,15], accent2:[139,172,15], ink:[155,188,15],
+    p1:[155,188,15], p2:[86,140,40], ball:[190,210,90], net:[48,98,48],
+    light:{wall:38,dim:70,decay:40,bloom:24,gamma:110} },
+  { name:"Aurora", bg:[10,10,26], dim:[38,38,70], accent:[125,249,230], accent2:[255,179,217], ink:[232,230,255],
+    p1:[125,249,230], p2:[255,179,217], ball:[251,250,255], net:[78,74,138],
+    light:{wall:46,dim:80,decay:170,bloom:150,gamma:115} },
+];
+
+// ---- colour helpers (mirror color.h to565 / frame_proto.h from565) ----
+const to565 = (r,g,b) => (((r&0xF8)<<8) | ((g&0xFC)<<3) | (b>>3)) & 0xFFFF;
+function from565(v){
+  const r5=(v>>11)&0x1F, g6=(v>>5)&0x3F, b5=v&0x1F;
+  return [ (r5<<3)|(r5>>2), (g6<<2)|(g6>>4), (b5<<3)|(b5>>2) ];
+}
+const rgb = c => "rgb("+c[0]+","+c[1]+","+c[2]+")";
+const clamp = (v,a,b) => v<a?a:v>b?b:v;
+
+// ---- COBS (port of frame_proto.h cobsEncode / cobsDecode) ----
+function cobsEncode(src){
+  const dst=[0]; let codeIdx=0, code=1;
+  for(let i=0;i<src.length;i++){
+    if(src[i]===0){ dst[codeIdx]=code; code=1; codeIdx=dst.length; dst.push(0); }
+    else { dst.push(src[i]); if(++code===0xFF){ dst[codeIdx]=code; code=1; codeIdx=dst.length; dst.push(0); } }
+  }
+  dst[codeIdx]=code;
+  return Uint8Array.from(dst);
+}
+function cobsDecode(src){
+  const dst=[]; let i=0;
+  while(i<src.length){
+    const code=src[i++];
+    if(code===0) return null;
+    for(let k=1;k<code;k++){ if(i>=src.length) return null; dst.push(src[i++]); }
+    if(code!==0xFF && i<src.length) dst.push(0);
+  }
+  return Uint8Array.from(dst);
+}
+
+// ============================================================================
+// Decoders — turn wire bytes into board state
+// ============================================================================
+const canvasBuf = new Array(SCREEN_PX);       // decoded RGB per logical pixel
+for(let i=0;i<SCREEN_PX;i++) canvasBuf[i]=[0,0,0];
+
+let lastFrameSeq = 0, frameCount = 0, pktCount = 0;
+let tel = { gameId:0, gameState:0, themeIndex:0, volume:153, score:[0,0], linkUp:0, fps:0, seq:0 };
+let glow = { decay:210, bloom:150 };          // from LightProfile
+
+function decodeFrame(b){
+  if(b.length < 13) return;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  if(dv.getUint32(0,true)!==FRAME_MAGIC || b[4]!==FRAME_VERSION || b[8]!==FMT_RGB565) return;
+  const x=b[9], y=b[10], w=b[11], h=b[12];
+  if(x+w>SCREEN_W || y+h>SCREEN_H || w===0 || h===0) return;
+  if(b.length < 13 + w*h*2) return;
+  let p=13;
+  for(let j=0;j<h;j++) for(let i=0;i<w;i++){
+    const v = b[p] | (b[p+1]<<8); p+=2;
+    canvasBuf[(y+j)*SCREEN_W + (x+i)] = from565(v);
+  }
+  lastFrameSeq = dv.getUint16(6,true); frameCount++;
+}
+
+function decodeLight(b){
+  if(b.length < 13) return;
+  glow.decay = b[10]; glow.bloom = b[11];       // wall,dim,decay,bloom,gamma @ 8..12
+  log("rx","LIGHT  decay="+b[10]+" bloom="+b[11]+" gamma="+b[12]);
+}
+
+function decodeTelemetry(b){
+  if(b.length !== 17) return;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const prev = tel;
+  tel = {
+    gameId:b[8], gameState:b[9], themeIndex:b[10], volume:b[11],
+    score:[b[12],b[13]], linkUp:b[14], fps:dv.getUint16(15,true), seq:dv.getUint16(6,true)
+  };
+  applyTelemetry(prev, tel);
+}
+
+// splits the COBS byte stream on 0x00, decodes each block, dispatches by magic
+let rxBuf = new Uint8Array(0);
+function rxFeed(chunk){
+  const merged = new Uint8Array(rxBuf.length + chunk.length);
+  merged.set(rxBuf,0); merged.set(chunk, rxBuf.length);
+  let start=0;
+  for(let i=0;i<merged.length;i++){
+    if(merged[i]===0){
+      if(i>start){ const dec = cobsDecode(merged.subarray(start,i)); if(dec) dispatch(dec); }
+      start=i+1;
+    }
+  }
+  rxBuf = merged.length-start > 8192 ? new Uint8Array(0) : merged.slice(start);
+}
+function dispatch(b){
+  if(b.length < 8) return;
+  pktCount++;
+  const magic = new DataView(b.buffer,b.byteOffset,b.byteLength).getUint32(0,true);
+  const type = b[5];
+  if(magic===FRAME_MAGIC){
+    if(type===MSG_FRAME) decodeFrame(b);
+    else if(type===MSG_SET_LIGHT_PROFILE) decodeLight(b);
+  } else if(magic===HOST_MAGIC && type===BOARD_TELEMETRY){
+    decodeTelemetry(b);
+  }
+}
+
+// ============================================================================
+// Encoders — build wire packets (used for TX to device, and mock loopback)
+// ============================================================================
+function frame(bytes){                          // COBS + 0x00 delimiter
+  const enc = cobsEncode(bytes);
+  const out = new Uint8Array(enc.length+1);
+  out.set(enc,0); out[enc.length]=0;
+  return out;
+}
+function encodeFrameFull(colors, seq){
+  const b = new Uint8Array(13 + SCREEN_PX*2);
+  const dv = new DataView(b.buffer);
+  dv.setUint32(0,FRAME_MAGIC,true); b[4]=FRAME_VERSION; b[5]=MSG_FRAME; dv.setUint16(6,seq&0xFFFF,true);
+  b[8]=FMT_RGB565; b[9]=0; b[10]=0; b[11]=SCREEN_W; b[12]=SCREEN_H;
+  let p=13;
+  for(let i=0;i<SCREEN_PX;i++){ const v=to565(colors[i][0],colors[i][1],colors[i][2]); b[p++]=v&0xFF; b[p++]=(v>>8)&0xFF; }
+  return b;
+}
+function encodeTelemetry(t, seq){
+  const b = new Uint8Array(17); const dv = new DataView(b.buffer);
+  dv.setUint32(0,HOST_MAGIC,true); b[4]=HOST_VERSION; b[5]=BOARD_TELEMETRY; dv.setUint16(6,seq&0xFFFF,true);
+  b[8]=t.gameId; b[9]=t.gameState; b[10]=t.themeIndex; b[11]=t.volume;
+  b[12]=t.score[0]; b[13]=t.score[1]; b[14]=t.linkUp; dv.setUint16(15,t.fps&0xFFFF,true);
+  return b;
+}
+function encodeLight(l, seq){
+  const b = new Uint8Array(13); const dv = new DataView(b.buffer);
+  dv.setUint32(0,FRAME_MAGIC,true); b[4]=FRAME_VERSION; b[5]=MSG_SET_LIGHT_PROFILE; dv.setUint16(6,seq&0xFFFF,true);
+  b[8]=l.wall; b[9]=l.dim; b[10]=l.decay; b[11]=l.bloom; b[12]=l.gamma;
+  return b;
+}
+let hseq = 0;
+function encodeHeaderCmd(type, extraLen){
+  const b = new Uint8Array(8+extraLen); const dv = new DataView(b.buffer);
+  dv.setUint32(0,HOST_MAGIC,true); b[4]=HOST_VERSION; b[5]=type; dv.setUint16(6,(hseq++)&0xFFFF,true);
+  return b;
+}
+function encodeSetVol(v){ const b=encodeHeaderCmd(HOST_SET_VOL,1); b[8]=v&0xFF; return b; }
+function encodeSetTheme(i){ const b=encodeHeaderCmd(HOST_SET_THEME,1); b[8]=i&0xFF; return b; }
+function encodeSelectGame(g){ const b=encodeHeaderCmd(HOST_SELECT_GAME,1); b[8]=g&0xFF; return b; }
+function encodeInject(pos, held){
+  const b=encodeHeaderCmd(HOST_INJECT_INPUT,9); const dv=new DataView(b.buffer);
+  dv.setInt32(8,pos[0]|0,true); dv.setInt32(12,pos[1]|0,true); b[16]=held&0xFF; return b;
+}
+
+// ============================================================================
+// Send path — to device when live, loopback into the mock "board" when mocking
+// ============================================================================
+function describe(b){
+  const t=b[5], dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+  if(t===HOST_SET_VOL) return "SET_VOL   "+Math.round(b[8]/2.55)+"% ("+b[8]+"/255)";
+  if(t===HOST_SET_THEME) return "SET_THEME "+b[8]+" · "+(THEMES[b[8]]||{}).name;
+  if(t===HOST_SELECT_GAME) return "SELECT_GAME "+b[8]+" · "+(GAMES[b[8]]||"?");
+  if(t===HOST_INJECT_INPUT) return "INJECT    knob0="+dv.getInt32(8,true)+" knob1="+dv.getInt32(12,true)+" held="+(b[16]&3).toString(2).padStart(2,"0");
+  return "cmd 0x"+t.toString(16);
+}
+function sendCommand(bytes, quiet){
+  if(!quiet) log("tx", describe(bytes));
+  if(live && writer){ writer.write(frame(bytes)).catch(e=>log("er","write: "+e.message)); }
+  if(mockOn){ mockBoardReceive(bytes); }        // the mock console consumes the command
+}
+
+// ============================================================================
+// Rendering — glow mirror (adapted from brand/brand-directions.html GlowMatrix)
+// ============================================================================
+const scr = document.getElementById("screen");
+const sctx = scr.getContext("2d");
+const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+const Wc = scr.width, Hc = scr.height;
+scr.width = Wc*dpr; scr.height = Hc*dpr;
+scr.style.width = Wc+"px"; scr.style.height = Hc+"px";
+sctx.setTransform(dpr,0,0,dpr,0,0);
+const cw = Wc/SCREEN_W, ch = Hc/SCREEN_H, ledR = Math.min(cw,ch)*0.34;
+
+// display buffers (0..1) that ease toward the decoded frame → smooth glow / decay
+const dr=new Float32Array(SCREEN_PX), dg=new Float32Array(SCREEN_PX), db=new Float32Array(SCREEN_PX);
+
+function renderMirror(){
+  const trails = document.getElementById("trails").checked;
+  // ease-on fast, decay-off slow (rate from the active LightProfile decay)
+  const rise = 0.55;
+  const fall = trails ? (0.5 - (glow.decay/255)*0.42) : 1;
+  const riseF = trails ? rise : 1;
+  for(let i=0;i<SCREEN_PX;i++){
+    const tr=canvasBuf[i][0]/255, tg=canvasBuf[i][1]/255, tb=canvasBuf[i][2]/255;
+    dr[i]+= (tr>dr[i]?riseF:fall)*(tr-dr[i]);
+    dg[i]+= (tg>dg[i]?riseF:fall)*(tg-dg[i]);
+    db[i]+= (tb>db[i]?riseF:fall)*(tb-db[i]);
+  }
+  const halo = ledR * (2.0 + (glow.bloom/255)*1.4);
+
+  sctx.globalCompositeOperation="source-over";
+  sctx.fillStyle="#050506"; sctx.fillRect(0,0,Wc,Hc);
+  sctx.fillStyle="rgba(255,255,255,.035)";
+  for(let y=0;y<SCREEN_H;y++) for(let x=0;x<SCREEN_W;x++){
+    sctx.beginPath(); sctx.arc(x*cw+cw/2, y*ch+ch/2, ledR*0.34, 0, 6.2832); sctx.fill();
+  }
+  sctx.globalCompositeOperation="lighter";
+  for(let j=0;j<SCREEN_PX;j++){
+    const br=Math.max(dr[j],dg[j],db[j]); if(br<0.03) continue;
+    const col=j%SCREEN_W, row=(j-col)/SCREEN_W;
+    const px=col*cw+cw/2, py=row*ch+ch/2;
+    const R=Math.min(255,dr[j]*255)|0, G=Math.min(255,dg[j]*255)|0, B=Math.min(255,db[j]*255)|0;
+    let grd=sctx.createRadialGradient(px,py,0,px,py,halo);
+    grd.addColorStop(0,"rgba("+R+","+G+","+B+","+(0.5*br)+")");
+    grd.addColorStop(.5,"rgba("+R+","+G+","+B+","+(0.12*br)+")");
+    grd.addColorStop(1,"rgba("+R+","+G+","+B+",0)");
+    sctx.fillStyle=grd; sctx.beginPath(); sctx.arc(px,py,halo,0,6.2832); sctx.fill();
+    grd=sctx.createRadialGradient(px,py,0,px,py,ledR*0.95);
+    grd.addColorStop(0,"rgba("+R+","+G+","+B+","+Math.min(1,br*1.15)+")");
+    grd.addColorStop(1,"rgba("+R+","+G+","+B+",0)");
+    sctx.fillStyle=grd; sctx.beginPath(); sctx.arc(px,py,ledR*0.95,0,6.2832); sctx.fill();
+  }
+  sctx.globalCompositeOperation="source-over";
+}
+
+// ---- knob rings ----
+const hostInput = { pos:[0,0], held:0 };
+function renderRing(id, k){
+  const cv=document.getElementById(id), c=cv.getContext("2d");
+  const W=cv.width, H=cv.height, cx=W/2, cy=H/2, R=W*0.36;
+  const th = THEMES[activeTheme];
+  const col = k===0 ? th.p1 : th.p2;
+  const style = ["trail","arc","pulse"][ [0,2,1,1,0][activeTheme] ] || "trail"; // ring style per theme
+  const pos = hostInput.pos[k];
+  const down = (hostInput.held>>k)&1;
+  const ang = -Math.PI/2 + pos*(Math.PI*2/24);
+  c.clearRect(0,0,W,H);
+  c.lineCap="round";
+  // track
+  c.strokeStyle="rgba(255,255,255,.08)"; c.lineWidth=6;
+  c.beginPath(); c.arc(cx,cy,R,0,6.2832); c.stroke();
+  const t=performance.now()/1000;
+  if(style==="arc"){
+    c.strokeStyle=rgb(col); c.lineWidth=6;
+    c.beginPath(); c.arc(cx,cy,R,-Math.PI/2,ang,ang< -Math.PI/2); c.stroke();
+  } else if(style==="pulse"){
+    const a=0.4+0.35*Math.sin(t*4);
+    c.strokeStyle="rgba("+col[0]+","+col[1]+","+col[2]+","+a+")"; c.lineWidth=6;
+    c.beginPath(); c.arc(cx,cy,R,0,6.2832); c.stroke();
+  } else {
+    for(let s=0;s<14;s++){ const a=ang-s*0.10; const al=(1-s/14)*0.5;
+      c.strokeStyle="rgba("+col[0]+","+col[1]+","+col[2]+","+al+")"; c.lineWidth=6;
+      c.beginPath(); c.arc(cx,cy,R,a-0.05,a+0.05); c.stroke(); }
+  }
+  // indicator dot
+  const dx=cx+Math.cos(ang)*R, dy=cy+Math.sin(ang)*R;
+  c.shadowBlur=14; c.shadowColor=rgb(col); c.fillStyle=rgb(col);
+  c.beginPath(); c.arc(dx,dy,6,0,6.2832); c.fill(); c.shadowBlur=0;
+  // hub (press)
+  c.fillStyle = down ? rgb(col) : "rgba(255,255,255,.07)";
+  if(down){ c.shadowBlur=18; c.shadowColor=rgb(col); }
+  c.beginPath(); c.arc(cx,cy,R*0.42,0,6.2832); c.fill(); c.shadowBlur=0;
+  c.fillStyle = down ? "#0a0a0c" : "rgba(255,255,255,.5)";
+  c.font="600 12px ui-monospace,monospace"; c.textAlign="center"; c.textBaseline="middle";
+  c.fillText(down?"PUSH":("K"+k), cx, cy);
+}
+
+// ============================================================================
+// UI updates (TFT, tiles, logs)
+// ============================================================================
+const $ = id => document.getElementById(id);
+function applyTelemetry(prev, t){
+  $("tftS0").textContent=t.score[0]; $("tftS1").textContent=t.score[1];
+  $("tftState").textContent=GAME_STATES[t.gameState]||("st"+t.gameState);
+  $("tftTitle").textContent=(GAMES[t.gameId]||"GAME").toUpperCase();
+  $("tftLink").className = "lnk"+(t.linkUp?" up":"");
+  $("tState").textContent=GAME_STATES[t.gameState]||t.gameState;
+  $("tScore").textContent=t.score[0]+" : "+t.score[1];
+  $("tTheme").textContent=(THEMES[t.themeIndex]||{}).name||t.themeIndex;
+  $("tVol").textContent=Math.round(t.volume/2.55)+"%";
+  $("tGame").textContent=t.gameId+" · "+(GAMES[t.gameId]||"?");
+  $("tLink").textContent=t.linkUp?"up":"down";
+  $("tFps").textContent=t.fps;
+  $("tSeq").textContent=t.seq;
+  if(t.themeIndex!==activeTheme) applyThemeChrome(t.themeIndex);
+  // log only on meaningful change
+  if(prev.gameState!==t.gameState) log("rx","STATE  → "+(GAME_STATES[t.gameState]||t.gameState));
+  if(prev.score[0]!==t.score[0]||prev.score[1]!==t.score[1]) log("rx","SCORE  "+t.score[0]+" : "+t.score[1]);
+  if(prev.linkUp!==t.linkUp) log("rx","LINK   "+(t.linkUp?"associated":"dropped"));
+}
+
+const logsEl = $("logs"); let logN=0;
+function log(kind, msg){
+  const d=new Date(); const ts=d.toLocaleTimeString("en-GB",{hour12:false})+"."+String(d.getMilliseconds()).padStart(3,"0");
+  const tags={rx:"RX",tx:"TX",sy:"··",er:"!!"};
+  const row=document.createElement("div"); row.className="ln "+kind;
+  row.innerHTML='<span class="t">'+ts+'</span><span class="tag">'+tags[kind]+'</span><span class="m"></span>';
+  row.querySelector(".m").textContent=msg;
+  const atBottom = logsEl.scrollHeight - logsEl.scrollTop - logsEl.clientHeight < 40;
+  logsEl.appendChild(row);
+  while(logsEl.childElementCount>300) logsEl.removeChild(logsEl.firstChild);
+  if(atBottom) logsEl.scrollTop=logsEl.scrollHeight;
+  $("logCount").textContent=(++logN);
+}
+
+// ============================================================================
+// Theme chrome — recolour the whole dashboard + glow when the theme changes
+// ============================================================================
+let activeTheme = 0;
+function applyThemeChrome(i){
+  activeTheme=i; const th=THEMES[i]; const rs=document.documentElement.style;
+  rs.setProperty("--accent",rgb(th.accent)); rs.setProperty("--accent2",rgb(th.accent2));
+  rs.setProperty("--p1",rgb(th.p1)); rs.setProperty("--p2",rgb(th.p2)); rs.setProperty("--ball",rgb(th.ball));
+  glow.decay=th.light.decay; glow.bloom=th.light.bloom;
+  $("themeName").textContent=th.name;
+  if($("theme").selectedIndex!==i) $("theme").selectedIndex=i;
+}
+
+// ============================================================================
+// Mock console — a synthetic Pong board: frames + telemetry through the codec
+// ============================================================================
+const mock = {
+  bx:2.5, by:9, vx:2.2, vy:4.6, score:[0,0], state:2, stateT:0, goalBy:0xFF,
+  pc:[2,2], mode:["auto","auto"], idle:[0,0], lastInj:[0,0], held:0,
+  volume:153, themeIndex:0, gameId:0, seqF:0, seqT:0, telAcc:0,
+};
+function mockReset(server){
+  mock.bx=2.5; mock.by=9; mock.vx=(Math.random()<.5?-1:1)*2.2;
+  mock.vy=(server===1?-1:1)*(4.2+Math.random()*0.8);
+}
+function mockBoardReceive(b){
+  const t=b[5], dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+  if(t===HOST_SET_VOL) mock.volume=b[8];
+  else if(t===HOST_SET_THEME){ mock.themeIndex=b[8]; sendLightForTheme(b[8]); }
+  else if(t===HOST_SELECT_GAME) mock.gameId=b[8];
+  else if(t===HOST_INJECT_INPUT){
+    const p=[dv.getInt32(8,true),dv.getInt32(12,true)];
+    for(let k=0;k<2;k++){ const d=p[k]-mock.lastInj[k]; mock.lastInj[k]=p[k];
+      if(d!==0){ mock.pc[k]=clamp(mock.pc[k]+d,0,SCREEN_W-2); mock.mode[k]="manual"; mock.idle[k]=0; } }
+    mock.held=b[16];
+  }
+}
+// on theme change the real board emits a LightProfile; mock does the same via loopback
+function sendLightForTheme(i){ if(mockOn) rxFeed(frame(encodeLight(THEMES[i].light, hseq++))); }
+
+function mockStep(dt){
+  const s=dt/1000;
+  if(mock.state===2){ // COUNTDOWN
+    mock.stateT+=dt; mock.by=15.5; mock.bx=mock.pc[0]+0.5;
+    if(mock.stateT>1100){ mock.state=3; mock.stateT=0; mockReset(0); }
+  } else if(mock.state===4){ // POINT FLASH
+    mock.stateT+=dt;
+    if(mock.stateT>850){ mock.stateT=0; mock.state=(mock.score[0]>=3||mock.score[1]>=3)?5:2; }
+  } else if(mock.state===5){ // GAME OVER
+    mock.stateT+=dt;
+    if(mock.stateT>2600){ mock.score=[0,0]; mock.state=2; mock.stateT=0; }
+  } else if(mock.state===3){ // PLAYING
+    mock.bx+=mock.vx*s; mock.by+=mock.vy*s;
+    if(mock.bx<0){ mock.bx=0; mock.vx=Math.abs(mock.vx); } if(mock.bx>SCREEN_W-1){ mock.bx=SCREEN_W-1; mock.vx=-Math.abs(mock.vx); }
+    if(mock.by<=0.5 && mock.vy<0){
+      if(mock.bx>=mock.pc[1]-0.5 && mock.bx<=mock.pc[1]+1.5){ mock.vy=Math.abs(mock.vy); mock.vx+=(mock.bx-(mock.pc[1]+0.5))*0.8; }
+      else { goal(0); }
+    }
+    if(mock.by>=SCREEN_H-1.5 && mock.vy>0){
+      if(mock.bx>=mock.pc[0]-0.5 && mock.bx<=mock.pc[0]+1.5){ mock.vy=-Math.abs(mock.vy); mock.vx+=(mock.bx-(mock.pc[0]+0.5))*0.8; }
+      else { goal(1); }
+    }
+    mock.vx=clamp(mock.vx,-3.2,3.2);
+  }
+  // paddle AI (when not being driven by injected input)
+  for(let k=0;k<2;k++){
+    if(mock.mode[k]==="manual"){ mock.idle[k]+=dt; if(mock.idle[k]>3000) mock.mode[k]="auto"; }
+    else { const target=clamp(mock.bx-0.5,0,SCREEN_W-2); mock.pc[k]+=(target-mock.pc[k])*0.12; }
+  }
+}
+function goal(by){ mock.score[by]=Math.min(9,mock.score[by]+1); mock.goalBy=by; mock.state=4; mock.stateT=0; mockReset(by); }
+
+function mockPaint(){
+  const th=THEMES[mock.themeIndex];
+  const px=new Array(SCREEN_PX); for(let i=0;i<SCREEN_PX;i++) px[i]=[0,0,0];
+  const set=(x,y,c)=>{ x=Math.round(x); y=Math.round(y); if(x>=0&&x<SCREEN_W&&y>=0&&y<SCREEN_H) px[y*SCREEN_W+x]=c; };
+  // net
+  const net=[th.net[0]*0.7|0,th.net[1]*0.7|0,th.net[2]*0.7|0];
+  for(let x=0;x<SCREEN_W;x+=2) set(x,8,net);
+  // goal flash band
+  if(mock.state===4){ const c=mock.goalBy===0?th.p1:th.p2; const a=0.5+0.5*Math.sin(mock.stateT/60);
+    const band=[c[0]*a|0,c[1]*a|0,c[2]*a|0]; const row=mock.goalBy===0?SCREEN_H-1:0; for(let x=0;x<SCREEN_W;x++) set(x,row,band); }
+  // paddles (brighten on held button)
+  const b0=(mock.held&1)?1:0.9, b1=(mock.held&2)?1:0.9;
+  for(let dx=0;dx<2;dx++){ set(mock.pc[0]+dx,SCREEN_H-1,[th.p1[0]*b0|0,th.p1[1]*b0|0,th.p1[2]*b0|0]);
+                           set(mock.pc[1]+dx,0,[th.p2[0]*b1|0,th.p2[1]*b1|0,th.p2[2]*b1|0]); }
+  // ball
+  if(mock.state===3||mock.state===2) set(mock.bx,mock.by,th.ball);
+  return px;
+}
+
+let mockTimer=null;
+function mockTick(){
+  const dt=40; mockStep(dt);
+  rxFeed(frame(encodeFrameFull(mockPaint(), mock.seqF++)));   // frame through the real codec
+  mock.telAcc+=dt;
+  if(mock.telAcc>=100){ mock.telAcc=0;
+    rxFeed(frame(encodeTelemetry({ gameId:mock.gameId, gameState:mock.state, themeIndex:mock.themeIndex,
+      volume:mock.volume, score:mock.score, linkUp:1, fps:Math.round(measuredFps) }, mock.seqT++)));
+  }
+}
+function startMock(){ if(mockTimer) return; mockTimer=setInterval(mockTick,40); }
+function stopMock(){ if(mockTimer){ clearInterval(mockTimer); mockTimer=null; } }
+
+// ============================================================================
+// Web Serial — connect a real device and stream its bytes through rxFeed
+// ============================================================================
+let port=null, reader=null, writer=null, live=false, mockOn=true;
+async function connect(){
+  if(!("serial" in navigator)){ setStatus("err","no web serial"); return; }
+  try{
+    setStatus("wait","requesting port…");
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate:115200 });
+    writer = port.writable.getWriter();
+    live=true; setMock(false); setStatus("live","live device");
+    $("btnConnect").disabled=true; $("btnDisconnect").disabled=false; $("capSrc").textContent="device";
+    log("sy","connected · 115200 baud");
+    readLoop();
+  }catch(e){ setStatus(mockOn?"mock":"off", mockOn?"mock":"idle"); log("er","connect: "+e.message); }
+}
+async function readLoop(){
+  while(port && port.readable && live){
+    reader = port.readable.getReader();
+    try{ while(true){ const {value,done}=await reader.read(); if(done) break; if(value) rxFeed(value); } }
+    catch(e){ log("er","read: "+e.message); }
+    finally{ try{ reader.releaseLock(); }catch(_){} }
+  }
+}
+async function disconnect(){
+  live=false;
+  try{ if(reader) await reader.cancel(); }catch(_){}
+  try{ if(writer){ writer.releaseLock(); writer=null; } }catch(_){}
+  try{ if(port) await port.close(); }catch(_){}
+  port=null; $("btnConnect").disabled=false; $("btnDisconnect").disabled=true;
+  log("sy","disconnected"); setMock(true);
+}
+
+function setStatus(cls,text){ $("status").className="status "+cls; $("statusText").textContent=text; }
+function setMock(on){
+  mockOn=on; const btn=$("btnMock");
+  btn.textContent="Mock: "+(on?"ON":"OFF"); btn.classList.toggle("on",on);
+  if(on){ startMock(); if(!live){ setStatus("mock","mock mode"); $("capSrc").textContent="mock"; } }
+  else{ stopMock(); }
+}
+
+// ============================================================================
+// Input — keyboard → INJECT_INPUT (continuous while held)
+// ============================================================================
+const MOVE={ "a":{k:0,d:-1}, "d":{k:0,d:1}, "arrowleft":{k:1,d:-1}, "arrowright":{k:1,d:1} };
+const BTN={ "s":0, "arrowdown":1 };
+const pressed=new Set();
+let lastHeld=-1, injLogAcc=0;
+function pumpInput(dt){
+  let changed=false;
+  for(const key in MOVE){ if(pressed.has(key)){ const m=MOVE[key]; hostInput.pos[m.k]+=m.d; changed=true; } }
+  let held=0; for(const key in BTN){ if(pressed.has(key)) held|=(1<<BTN[key]); }
+  if(held!==hostInput.held){ hostInput.held=held; changed=true; }
+  injLogAcc+=dt;
+  if(changed){
+    const quiet = held===lastHeld && injLogAcc<400;     // throttle rotate spam in the log
+    sendCommand(encodeInject(hostInput.pos, hostInput.held), quiet);
+    if(!quiet){ injLogAcc=0; lastHeld=held; }
+  }
+  // reflect held keys on the legend
+  document.querySelectorAll("kbd[data-k]").forEach(el=>el.classList.toggle("hot",pressed.has(el.dataset.k)));
+}
+addEventListener("keydown",e=>{ const k=e.key.toLowerCase(); if(k in MOVE || k in BTN){ e.preventDefault(); pressed.add(k); } });
+addEventListener("keyup",  e=>{ const k=e.key.toLowerCase(); if(k in MOVE || k in BTN){ e.preventDefault(); pressed.delete(k); } });
+addEventListener("blur", ()=>pressed.clear());
+
+// ============================================================================
+// Control wiring
+// ============================================================================
+$("btnConnect").addEventListener("click",connect);
+$("btnDisconnect").addEventListener("click",disconnect);
+$("btnMock").addEventListener("click",()=>setMock(!mockOn));
+
+const volEl=$("vol");
+function pushVol(){ const pct=+volEl.value; $("volVal").textContent=pct+"%"; volEl.style.setProperty("--fill",pct+"%");
+  sendCommand(encodeSetVol(Math.round(pct*2.55))); }
+volEl.addEventListener("input",()=>{ $("volVal").textContent=volEl.value+"%"; volEl.style.setProperty("--fill",volEl.value+"%"); });
+volEl.addEventListener("change",pushVol);
+
+const themeSel=$("theme");
+THEMES.forEach((t,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=(i+1)+". "+t.name; themeSel.appendChild(o); });
+themeSel.addEventListener("change",()=>{ const i=+themeSel.value; applyThemeChrome(i); sendCommand(encodeSetTheme(i)); });
+
+const gameSel=$("game");
+GAMES.forEach((g,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=i+" · "+g; gameSel.appendChild(o); });
+gameSel.addEventListener("change",()=>sendCommand(encodeSelectGame(+gameSel.value)));
+
+// ============================================================================
+// Main loop
+// ============================================================================
+let measuredFps=50, fpsFrames=0, fpsLast=performance.now(), capLast=performance.now(), pktLast=0, frLast=0, lastRaf=performance.now();
+function loop(now){
+  const dt=Math.min(60, now-lastRaf); lastRaf=now;
+  pumpInput(dt);
+  renderMirror();
+  renderRing("ring0",0); renderRing("ring1",1);
+  $("rv0").textContent=hostInput.pos[0]; $("rv1").textContent=hostInput.pos[1];
+  fpsFrames++;
+  if(now-fpsLast>=500){ measuredFps=fpsFrames*1000/(now-fpsLast); fpsFrames=0; fpsLast=now; }
+  if(now-capLast>=500){
+    $("capFps").textContent=Math.round(measuredFps);
+    $("capSeq").textContent=lastFrameSeq;
+    $("capPps").textContent=Math.round((pktCount-pktLast)*1000/(now-capLast));
+    pktLast=pktCount; frLast=frameCount; capLast=now;
+  }
+  requestAnimationFrame(loop);
+}
+
+// ============================================================================
+// Init
+// ============================================================================
+function init(){
+  if(!("serial" in navigator)){
+    $("btnConnect").disabled=true;
+    const w=$("warn"); w.style.display="block";
+    w.textContent="Web Serial unavailable in this browser — open in Chrome or Edge (desktop) to connect real hardware. Mock mode runs everywhere.";
+  }
+  applyThemeChrome(0);
+  volEl.style.setProperty("--fill","60%");
+  log("sy","dashboard ready · mock mode");
+  log("sy","protocol: FRAME_MAGIC=CFRM  HOST_MAGIC=HOST  COBS-framed");
+  setMock(true);
+  sendLightForTheme(0);
+  requestAnimationFrame(loop);
+}
+init();
+
+})();
+</script>
