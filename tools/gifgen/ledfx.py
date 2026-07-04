@@ -1,4 +1,4 @@
-"""Glowing-LED wall renderer: static background plate, precomputed gaussian
+"""Glowing-LED screen renderer: static background plate, precomputed gaussian
 light sprites, additive float32 compositing, filmic tonemap."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 from gifgen import game
 from gifgen.arrays import F32, U8, Frame
 
-# LED geometry (px); wall dimensions come from the shared game contract
+# LED geometry (px); screen dimensions come from the shared game contract
 PITCH: Final[int] = 18
 GRID_W: Final[int] = game.W
 GRID_H: Final[int] = game.H

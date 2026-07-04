@@ -1,1 +1,1 @@
-"""gifgen — render tooling for the PONG WALL assets (GIFs + wiring diagram)."""
+"""gifgen — render tooling for the PONG assets (GIFs + wiring diagram)."""

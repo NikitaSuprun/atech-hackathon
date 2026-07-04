@@ -9,7 +9,7 @@ Two-player Pong on two **Atech 14-Port boards** (ESP32-S3):
 
 | Board | Modules (port) | Role |
 |---|---|---|
-| **Screen** | 12× `neopixel` Light Grid: ports 1-6 direct (**flipped 180°**) + 7,9,10,11,13,14 cabled (upright) → 6×18 px wall | Game engine (C++ state machine), WiFi **SoftAP** `atech-pong`, UDP server :47420 |
+| **Screen** | 12× `neopixel` Light Grid: ports 1-6 direct (**flipped 180°**) + 7,9,10,11,13,14 cabled (upright) → 6×18 px screen | Game engine (C++ state machine), WiFi **SoftAP** `atech-pong`, UDP server :47420 |
 | **Controller** | knob_p1 (1,2) · knob_p2 (9,10)¹ · speaker (4,5) · TFT 160×80 (13,14) · virtual `pong_control` (7) | WiFi STA, sends inputs 50 Hz, receives feedback 20 Hz → drives speaker jingles, TFT score, knob rings |
 
 ¹ User remembered "8,9" — impossible (port 8 = USB-C, reserved). Default (9,10); if wrong on hardware day it's one line in `controller/project.yaml` ([10,11] is the other valid option).

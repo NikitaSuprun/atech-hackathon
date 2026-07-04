@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Final
 
-# --- wall geometry ---
+# --- screen geometry ---
 W: Final[int] = 6
 H: Final[int] = 18
 NUM_TILES: Final[int] = 12

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Product-shot animation of the PONG WALL controller board -> assets/controller.gif."""
+"""Product-shot animation of the PONG controller board -> assets/controller.gif."""
 
 from __future__ import annotations
 
@@ -400,7 +400,7 @@ def build_static() -> tuple[F64, F64, F64, F64]:
         smd(sx, sy, sw, sh)
 
     silk = np.array([0.9, 1.0, 1.1])
-    draw_text(S, "PONG WALL", 220, 54, 2, silk * 0.060)
+    draw_text(S, "PONG", 220, 54, 2, silk * 0.060)
     draw_text(S, "CONSOLE", 220, 73, 1, silk * 0.042)
     draw_text(S, "P1", K1[0], 250, 1, CYAN * 0.16)
     draw_text(S, "P2", K2[0], 250, 1, AMBER * 0.16)

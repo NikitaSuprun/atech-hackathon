@@ -1,5 +1,5 @@
 // Runs the real pong engine through a scripted, watchable match and dumps the
-// 6x18 framebuffer as text for tools/gifgen/render_wall.py.
+// 6x18 framebuffer as text for tools/gifgen/render_matrix.py.
 //
 // Build:  g++ -std=c++14 -O2 -I modules/pong_screen tools/gifgen/dump_frames.cpp \
 //             modules/pong_screen/pong_engine.cpp -o /tmp/dump_frames

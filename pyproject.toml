@@ -1,7 +1,7 @@
 [project]
 name = "atech-hackathon"
 version = "0.1.0"
-description = "PONG WALL — an ESP32 two-board Pong game on an LED wall, with a desktop simulator and Python render tooling."
+description = "PONG — an ESP32 two-board Pong game on an LED screen, with a desktop simulator and Python render tooling."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -40,7 +40,7 @@ select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "ANN", "N", "S", "PLR2004"
 # grid-dimension locals, and the g++/subprocess build call are intentional here.
 "tools/gifgen/render_controller.py" = ["PLR2004", "N806", "N803"]
 "tools/gifgen/render_wiring.py" = ["PLR2004", "N806", "N803", "N802"]
-"tools/gifgen/render_wall.py" = ["PLR2004", "N806", "N803", "S603", "S607", "S108"]
+"tools/gifgen/render_matrix.py" = ["PLR2004", "N806", "N803", "S603", "S607", "S108"]
 "tools/gifgen/ledfx.py" = ["N806", "N803"]
 "tools/serial_bridge.py" = ["S603", "S607"]
 

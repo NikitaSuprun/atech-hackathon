@@ -425,7 +425,7 @@ void Engine::render(Frame& out) const {
             drawScene(out, 1.0f, true);
             return;
         case GS_POINT_FLASH: {
-            // two full-wall pulses in scorer color, then pips (newest blinking)
+            // two full-screen pulses in scorer color, then pips (newest blinking)
             Color c = st_.goalBy == 0 ? COL_P1 : COL_P2;
             uint32_t t = stateMs_;
             bool on = t < PF_PULSE1_END || (t >= PF_PULSE2_START && t < PF_PULSE2_END);

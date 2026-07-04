@@ -15,7 +15,7 @@ const pong::Color kIdHues[6] = {
 };
 
 #ifdef PONG_CALIBRATION_MODE
-// full-wall TILE_MAP verify glyph, asymmetric on both axes:
+// full-screen TILE_MAP verify glyph, asymmetric on both axes:
 // "F" in the top half, down-arrow in the bottom half,
 // top row solid COL_P2, bottom row solid COL_P1
 void drawVerifyGlyph(pong::Frame& f) {

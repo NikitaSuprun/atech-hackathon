@@ -9,14 +9,14 @@
 #include "compositor.h"
 #include "link_serial.h"
 
-// Arduino glue: hosts the 12 wall tiles, pumps UDP input into per-controller
+// Arduino glue: hosts the 12 screen tiles, pumps UDP input into per-controller
 // slots, drives the pure engine at a fixed step, pushes dirty tiles through
 // the compositor, and sends 20 Hz feedback to every learned controller.
 class PongScreen {
 public:
     // tiles = grids in wiring order (ports 1..7,9..11,13,14); n must be 12
     void begin(NeoPixelGrid** tiles, int n);
-    // never blocks; worst case ~10 ms (full-wall repaint)
+    // never blocks; worst case ~10 ms (full-screen repaint)
     void tick();
     bool ok() const { return ok_; }
 

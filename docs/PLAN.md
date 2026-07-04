@@ -8,7 +8,7 @@
 
 atech.dev hackathon: two-player Pong across two Atech 14-Port boards (ESP32-S3) over WiFi.
 
-- **Screen board** — **12× Light Grid** (`neopixel`, 3×3 WS2812): ports 1–6 plugged directly (tile column 0, mounted **flipped 180°**), ports 7,9,10,11,13,14 cabled alongside (tile column 1, upright) → **6 px × 18 px wall** (108 px, 2 tile-cols × 6 tile-rows). Authoritative game engine + **WiFi SoftAP** + UDP server. All 12 usable ports occupied.
+- **Screen board** — **12× Light Grid** (`neopixel`, 3×3 WS2812): ports 1–6 plugged directly (tile column 0, mounted **flipped 180°**), ports 7,9,10,11,13,14 cabled alongside (tile column 1, upright) → **6 px × 18 px screen** (108 px, 2 tile-cols × 6 tile-rows). Authoritative game engine + **WiFi SoftAP** + UDP server. All 12 usable ports occupied.
 - **Controller board** ("console") — knob P1 (1,2), knob P2 (9,10)*, I2S **speaker** (4,5), 160×80 **TFT** (13,14), virtual `pong_control` module on port 7 (free: 3, 6, 11). WiFi STA + UDP client; hosts audio/score/ring presenters.
 
 \* User recalled "8,9" but port_8 = reserved USB-C; (9,10) is the valid neighbor pair (alternative [10,11]; [13,14] taken by TFT). One-line yaml fix on hardware day; `atech validate`/`monitor` reveals instantly.
@@ -100,7 +100,7 @@ templates:
 
 ```
 modules/pong_screen/   module.yaml · pong_screen.h/.cpp (glue: hosts 12th grid, net pump,
-                       fixed-step engine driver, wall push, feedback tx, identify pattern) ·
+                       fixed-step engine driver, screen push, feedback tx, identify pattern) ·
                        link_udp_server.h/.cpp
                        PURE: pong_engine.h/.cpp · pong_frame.h (W=6,H=18) · compositor.h/.cpp
                        (12-tile rotation LUT + dirty cache) · pong_config.h (tunables + TILE_MAP)
@@ -140,7 +140,7 @@ net_config.h: SSID `atech-pong` / WPA2 `pong4242`, channel 6 (retune on site: le
 
 ## Game state machine (engine-internal; server-authoritative)
 
-`GS_LINK_WAIT` (never-linked → identify pattern; mid-game → frozen frame + breathe) → `GS_READY_CHECK` (start / after EVERY point / rematch gate) → `GS_COUNTDOWN` (~0.8-1.5 s; ball glued to server's paddle face, moves with it — teaches the mapping; blink 4 Hz; serve = conceder of last point, first serve random; launch angle ±(0.35|0.70)·60° random, never pure vertical, toward the roomier side; speed resets) → `GS_PLAYING` → goal → `GS_POINT_FLASH` (~1.2 s: 2 full-wall scorer-color flashes then score pips) → score<3 → READY_CHECK; score=3 → `GS_GAME_OVER` (winner-color wave from winner's edge + score bars; ≥3 s) → both-hold → scores 0-0 → **straight to COUNTDOWN** (no double gate).
+`GS_LINK_WAIT` (never-linked → identify pattern; mid-game → frozen frame + breathe) → `GS_READY_CHECK` (start / after EVERY point / rematch gate) → `GS_COUNTDOWN` (~0.8-1.5 s; ball glued to server's paddle face, moves with it — teaches the mapping; blink 4 Hz; serve = conceder of last point, first serve random; launch angle ±(0.35|0.70)·60° random, never pure vertical, toward the roomier side; speed resets) → `GS_PLAYING` → goal → `GS_POINT_FLASH` (~1.2 s: 2 full-screen scorer-color flashes then score pips) → score<3 → READY_CHECK; score=3 → `GS_GAME_OVER` (winner-color wave from winner's edge + score bars; ≥3 s) → both-hold → scores 0-0 → **straight to COUNTDOWN** (no double gate).
 
 **Ready mechanic (server-clocked = inherently debounced, loss-immune):** in READY_CHECK, per player `holdMs += dt` while `held[i] && linked`, **reset to 0 on release**; progress caps and *stays* capped while held (first player locks in and waits; lock event fires once on crossing); both capped → advance + serveSeq++. During stale input, holds freeze then decay after 1 s. Idle in READY_CHECK > ~20-30 s → attract demo rally (engine AI: track predicted ball x + wobble, capped speed, forced miss every ~3rd rally; ×0.45-0.6 palette) until any hold begins.
 
@@ -169,11 +169,11 @@ ENGLISH_GAIN 0.85, VY_MIN 0.55, PADDLE_GRACE 0.35 (edge-graze = extreme angle = 
 
 **Palette for the hard 51/255 clamp** — effective PWM = v/5, values <25 quantize to garbage → only two intensity tiers: accents (saturated, ≥200) and dims (70–90), nothing between. P1 cyan (0,200,255) bottom · P2 amber (255,120,0) top (CVD-safe blue/orange; avoids pure blue = dimmest-reading channel) · ball white (255,255,255) · net: 2 dim dots (70,70,70) at mid-field row 9, cols 1 & 4, suppressed under ball, config-flagged · concede flash red · attract ×0.45–0.6 · stale indicator: amber blink at pixel (0,0). **No ball trail** (at this resolution a trail is a second ball; speed-tinted ball is the polish alternative). Score pips: 3-segment bars (each point = 2 px wide) row 2 amber / row 15 cyan; newest blinks; full bar = match point, leader's row breathes.
 
-**READY_CHECK wall UI:** not-held → player's paddle row pulses their color (0.5 Hz, FB 70↔255); holding → row fills column-by-column left→right (6 cols = 6 steps of the 500 ms) with bright cursor at fill edge; locked → one white full-row blink then steady; both → countdown.
+**READY_CHECK screen UI:** not-held → player's paddle row pulses their color (0.5 Hz, FB 70↔255); holding → row fills column-by-column left→right (6 cols = 6 steps of the 500 ms) with bright cursor at fill edge; locked → one white full-row blink then steady; both → countdown.
 
 **Compositor:** `TILE_MAP[12] {tileRow 0-5, tileCol 0-1, rot}` in pong_config.h, index = port order (1,2,3,4,5,6,7,9,10,11,13,14). **Calibrated build: ports 1-6 → col 0 rows 0-5 rot 180°; ports 7,9,10,11,13,14 → col 1 rows 0-5 rot 0.** LED local (lr,lc) on a tile rotated CW by θ displays framebuffer region cell: θ=0 → (lr,lc) · 90° → (lc, 2−lr) · 180° → (2−lr, 2−lc) · 270° → (2−lc, lr). Startup LUT `lut[12][9] = fbByteOffset`; runtime = 108 array reads + per-tile 27-B memcmp vs cache → show() only dirty tiles (rally touches 1–3; full repaint 12 tiles ≈ 7 ms, fits the 20 ms tick) + force repaint on state change + **2 s heartbeat repaint** (WS2812s glitch pixels from electrical noise at parties; heartbeat heals invisibly).
 
-**Calibration (~10 min, one photo):** identify mode runs during never-linked LINK_WAIT: tile i (port order) solid identity color — 6 hues (R,G,B,Y,M,C @180) reused per column (columns spatially unambiguous) — with **local pixel 0 = WHITE** (rotation corner: physically TL=0°, TR=90°, BR=180°, BL=270°) and **local pixel 1 = dim gray** (must sit edge-adjacent to white along the tile's local top row — guards against diagonal misreads); white pixel blinks (tile-index+1) times every 3 s as a wiring-order double check. Fill TILE_MAP (legend printed as comment above it) → rebuild → **verify mode**: full-wall glyph asymmetric on both axes (an "F" in the top half + a down-arrow in the bottom half, P2 color top row / P1 color bottom row) — any scrambled 3×3 patch pinpoints the one wrong entry. Doubles as the **RMT go/no-go for 24 strip objects**.
+**Calibration (~10 min, one photo):** identify mode runs during never-linked LINK_WAIT: tile i (port order) solid identity color — 6 hues (R,G,B,Y,M,C @180) reused per column (columns spatially unambiguous) — with **local pixel 0 = WHITE** (rotation corner: physically TL=0°, TR=90°, BR=180°, BL=270°) and **local pixel 1 = dim gray** (must sit edge-adjacent to white along the tile's local top row — guards against diagonal misreads); white pixel blinks (tile-index+1) times every 3 s as a wiring-order double check. Fill TILE_MAP (legend printed as comment above it) → rebuild → **verify mode**: full-screen glyph asymmetric on both axes (an "F" in the top half + a down-arrow in the bottom half, P2 color top row / P1 color bottom row) — any scrambled 3×3 patch pinpoints the one wrong entry. Doubles as the **RMT go/no-go for 24 strip objects**.
 
 ## Controller presenters (dumb consumers of `(snapshot, Cues)`; all dedupe in FeedbackTracker)
 
@@ -234,7 +234,7 @@ TICK_HZ 50 · GRID 6×18 · NUM_TILES 12 · PADDLE_W 2 (3 = casual mode) · PADD
 
 ## Desktop simulator (sim/main.cpp — tune everything today, zero hardware)
 
-POSIX only, ~150 lines: termios raw (−ICANON −ECHO, VMIN=0), fixed 50 Hz (clock_gettime + sleep remainder, catch-up cap 4), `\x1b[H` home (no clear = flicker-free), each px `\x1b[48;2;R;G;Bm  ` (2 spaces), 18 rows + side panel: state, scores, hold %, speed, last 5 audio cues with sound description (`♪ HIT_P1 880Hz 30ms`), `TFT| …` model line, `[HOLD]` badges. Keys: `a/z` P1 knob ∓2 detents, `k/m` P2, **`s`/`l` toggle P1/P2 held** (raw mode has no key-release), `t` toggle stale, `q` quit. Keyboard feeds the same int32-counter → delta path as hardware → knob feel constants transfer directly. Optional `--tiles`: render through the Compositor LUT into 12 spaced pseudo-tiles (verify rotation math + the calibration glyph pre-hardware). Optional SIM_DIM flag: ×51/255 with 0.5-gamma preview of real-wall brightness.
+POSIX only, ~150 lines: termios raw (−ICANON −ECHO, VMIN=0), fixed 50 Hz (clock_gettime + sleep remainder, catch-up cap 4), `\x1b[H` home (no clear = flicker-free), each px `\x1b[48;2;R;G;Bm  ` (2 spaces), 18 rows + side panel: state, scores, hold %, speed, last 5 audio cues with sound description (`♪ HIT_P1 880Hz 30ms`), `TFT| …` model line, `[HOLD]` badges. Keys: `a/z` P1 knob ∓2 detents, `k/m` P2, **`s`/`l` toggle P1/P2 held** (raw mode has no key-release), `t` toggle stale, `q` quit. Keyboard feeds the same int32-counter → delta path as hardware → knob feel constants transfer directly. Optional `--tiles`: render through the Compositor LUT into 12 spaced pseudo-tiles (verify rotation math + the calibration glyph pre-hardware). Optional SIM_DIM flag: ×51/255 with 0.5-gamma preview of real-screen brightness.
 
 ## Parallel workstreams (7 conflict-free lanes after contracts freeze)
 
@@ -271,7 +271,7 @@ Hardware bring-up (kills biggest unknowns first):
 
 ## Cut list if behind (reverse priority)
 
-net dots → wall-bounce blip → TFT rally counter → ring FX beyond hold-sweep+score-dial → GAME_OVER wave (→ solid winner color) → attract AI (→ breathing paddle rows) → match-point sting → SCORE pips on wall (TFT has them). **Never cut:** clamped-delta knob mapping, english, speed ramp, both-hold READY_CHECK, calibration mode, exactly-once cue tracker, the sim.
+net dots → wall-bounce blip → TFT rally counter → ring FX beyond hold-sweep+score-dial → GAME_OVER wave (→ solid winner color) → attract AI (→ breathing paddle rows) → match-point sting → SCORE pips on screen (TFT has them). **Never cut:** clamped-delta knob mapping, english, speed ramp, both-hold READY_CHECK, calibration mode, exactly-once cue tracker, the sim.
 
 ## Polish list if ahead (cheap + loud first)
 

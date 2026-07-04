@@ -1,11 +1,11 @@
-"""Renders the PONG WALL product GIF from the real C++ engine.
+"""Renders the PONG product GIF from the real C++ engine.
 
 Usage (from the repo root):
-    PYTHONPATH=tools uv run --group dev python -m gifgen.render_wall [--stills-only]
+    PYTHONPATH=tools uv run --group dev python -m gifgen.render_matrix [--stills-only]
 
 Compiles tools/gifgen/dump_frames.cpp if needed, replays the scripted match,
 composites every framebuffer with the ledfx glow pipeline, writes five preview
-stills to tools/gifgen/preview/ and the final animation to assets/pong-wall.gif.
+stills to tools/gifgen/preview/ and the final animation to assets/pong.gif.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from gifgen import game, ledfx, paths
 from gifgen.arrays import F32, U8, Frame
 
 BINARY: Final[Path] = Path("/tmp/dump_frames")
-GIF_PATH: Final[Path] = paths.ASSETS / "pong-wall.gif"
+GIF_PATH: Final[Path] = paths.ASSETS / "pong.gif"
 CXX: Final[str] = "g++"
 CXX_FLAGS: Final[list[str]] = ["-std=c++14", "-O2"]
 MAX_BYTES: Final[int] = 8 * 1024 * 1024

@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include "pong_shared.h"
 
-// Pure contract — the logical wall framebuffer. No Arduino includes allowed here.
-// Wall is 6 px wide x 18 px tall (12 NeoPixel 3x3 tiles, 2 tile-cols x 6 tile-rows),
+// Pure contract — the logical screen framebuffer. No Arduino includes allowed here.
+// Screen is 6 px wide x 18 px tall (12 NeoPixel 3x3 tiles, 2 tile-cols x 6 tile-rows),
 // viewed facing the LEDs: (0,0) = top-left, x grows right, y grows down.
 // P2 defends the top edge (y=0), P1 defends the bottom edge (y=H-1).
 

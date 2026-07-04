@@ -54,7 +54,7 @@ constexpr float ATTRACT_PADDLE_SPEED = 6.0f;      // cells/s demo paddle trackin
 constexpr int   ATTRACT_FORCE_MISS_EVERY = 3;     // defender whiffs every Nth rally
 
 // ---------------- palette ----------------
-// Wall brightness is hard-clamped to 51/255 (~20%) by the NeoPixel driver: effective
+// Screen brightness is hard-clamped to 51/255 (~20%) by the NeoPixel driver: effective
 // PWM = value/5, so anything < ~25 quantizes to mud. Two tiers only:
 // accents (saturated, >= 200) and dims (70-90). Dim = dim PALETTE ENTRY, never
 // setBrightness (that would dim the ball too).
@@ -64,7 +64,7 @@ constexpr pong::Color COL_LOSE   = {255, 0, 0};
 constexpr uint8_t     DIM_LEVEL  = 80;
 constexpr float       ATTRACT_DIM = 0.45f;
 
-// ---------------- wall / compositor ----------------
+// ---------------- screen / compositor ----------------
 constexpr int NUM_TILES = 12;
 constexpr int TILE_DIM      = 3;                   // 3x3 LEDs per physical tile
 constexpr int LEDS_PER_TILE = TILE_DIM * TILE_DIM; // 9 chips per tile
@@ -102,7 +102,7 @@ constexpr TileCfg TILE_MAP[NUM_TILES] = {
 
 // ---------------- feature flags ----------------
 constexpr bool NET_DOTS              = false;     // user: no dots mid-field
-constexpr bool WALL_SCORE_PIPS       = false;     // user: no score pips on the wall (confusing)
+constexpr bool WALL_SCORE_PIPS       = false;     // user: no score pips on the screen (confusing)
 constexpr bool ATTRACT_CHIRP_ENABLED = false;
 constexpr bool SPEED_TINT_BALL       = false;     // polish: white -> warm as speed rises
 

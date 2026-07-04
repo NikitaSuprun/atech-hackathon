@@ -1,4 +1,4 @@
-# PONG WALL — Current State & Developer Guide
+# PONG — Current State & Developer Guide
 
 > Read this first. It's the operational handover: what the system is, where things
 > stand, how to build/flash/test, and the gotchas that will bite you if you don't know
@@ -11,10 +11,10 @@ Last updated: 2026-07-04. `origin/main` @ `523f035`. Working tree clean.
 
 ## 1. What it is
 
-A two-board ESP32 Pong game on a physical LED wall.
+A two-board ESP32 Pong game on a physical LED screen.
 
 - **Screen board** (`modules/pong_screen/`) — runs the authoritative game engine and drives
-  a **6 px × 18 px wall** made of **12 NeoPixel 3×3 "Light Grid" tiles** (2 tile-cols × 6
+  a **6 px × 18 px screen** made of **12 NeoPixel 3×3 "Light Grid" tiles** (2 tile-cols × 6
   tile-rows). Also hosts a WiFi SoftAP.
 - **Controller board** (`modules/pong_control/`) — 2 rotary-encoder **knobs** (P1/P2),
   a **speaker**, and a small **TFT scoreboard**. Reads inputs, plays audio, shows score.
@@ -22,7 +22,7 @@ A two-board ESP32 Pong game on a physical LED wall.
   (`tools/serial_bridge.py`). A UDP/WiFi transport also exists in-tree but serial is active.
 - **Desktop sim** (`sim/`) — terminal Pong for engine work with no hardware.
 - **Render tooling** (`tools/gifgen/`) — Python package that renders the README assets
-  (`assets/pong-wall.gif`, `controller.gif`, `system-diagram.png`) from the real engine.
+  (`assets/pong.gif`, `controller.gif`, `system-diagram.png`) from the real engine.
 
 Colors/sides: **P1 = cyan, defends the bottom edge (y = H−1)**; **P2 = amber, defends the
 top edge (y = 0)**.
@@ -31,7 +31,7 @@ top edge (y = 0)**.
 
 ## 2. Where things stand (flashed & confirmed on hardware)
 
-- **Screen firmware:** `KNOB_SIGN = {-1, -1}` (both knobs reversed — see §5), **wall score
+- **Screen firmware:** `KNOB_SIGN = {-1, -1}` (both knobs reversed — see §5), **screen score
   pips OFF** (`WALL_SCORE_PIPS = false`).
 - **Controller firmware:** speaker volume lowered to **`0.2f`** (from the module default `0.4f`).
 - Everything is committed and pushed to `main`. The prior "cleanup" work (named constants,
@@ -64,12 +64,12 @@ The engine is the only thing that touches `padX_` — inputs come in as **absolu
 knob detents** (`knobPos`), and `padX += KNOB_SIGN[p] * delta / DETENTS_PER_CELL`.
 
 **Compositor** (`compositor.cpp`) — maps the logical frame onto the 12 physical tiles via
-`TILE_MAP[12] = {tileRow, tileCol, rot}` + a serpentine chip order. **ALL wall orientation
+`TILE_MAP[12] = {tileRow, tileCol, rot}` + a serpentine chip order. **ALL screen orientation
 lives here** (engine/`pushFrame`/driver are orientation-transparent). `rot` encodes pure
 rotations only (0/1/2/3 quarter-turns), **no mirroring**.
 - Calibrated build: **left column (ports 1–6) = `rot 2` (mounted 180°)**, right column
   (ports 7,9,10,11,13,14) = `rot 0` (upright). This matches the real hardware.
-- The wall GIF renders the **logical** frame directly and does **not** go through `TILE_MAP`.
+- The screen GIF renders the **logical** frame directly and does **not** go through `TILE_MAP`.
 
 **Transport** — controller sends `PongInputPacket`s (`PKT:<hex>` lines over USB serial),
 screen replies with `PongFeedbackPacket`s. `serial_bridge.py` relays both directions. Wire
@@ -84,7 +84,7 @@ layout is frozen in `pong_proto.h`.
   wiring claim. The dev harness (`dump_frames.cpp`, `sim/main.cpp`) multiplies its knob output
   by `KNOB_SIGN[p]` so the demo/tests stay identical for any sign (only the physical knobs
   change). If a future build feels reversed on **one** side, flip that side's sign.
-- **`WALL_SCORE_PIPS = false`** — the wall no longer shows score pips (they read as confusing
+- **`WALL_SCORE_PIPS = false`** — the screen no longer shows score pips (they read as confusing
   "health bars"); score lives on the controller's TFT scoreboard. Guarded in
   `Engine::drawPips()`.
 - **Speaker volume** — the speaker module's setup template sets `setVolume(0.4f)`;
@@ -110,7 +110,7 @@ g++ -std=c++14 -O2 -I modules/pong_screen tools/gifgen/dump_frames.cpp \
 
 **Render assets** (reproducible byte-identically in the pinned env — numpy 2.4.6 / pillow 12.3.0):
 ```bash
-PYTHONPATH=tools uv run --group dev python -m gifgen.render_wall        # assets/pong-wall.gif
+PYTHONPATH=tools uv run --group dev python -m gifgen.render_matrix      # assets/pong.gif
 PYTHONPATH=tools uv run --group dev python -m gifgen.render_controller  # assets/controller.gif
 PYTHONPATH=tools uv run --group dev python -m gifgen.render_wiring       # assets/system-diagram.png
 ```
@@ -141,7 +141,7 @@ reconnect. **Re-identify by serial output**, not by port number:
 Sample a port read-only for ~3 s with pyserial to tell them apart (see how the session did it
 if unsure). As of last session: screen = `usbmodem1101`, controller = `usbmodem1201`.
 
-**Which board to flash for a given change:** engine/wall/`KNOB_SIGN`/pips → **screen**;
+**Which board to flash for a given change:** engine/matrix/`KNOB_SIGN`/pips → **screen**;
 audio/rings/scoreboard/volume → **controller**. (`pong_config.h` is shared, but `KNOB_SIGN`
 is only *used* by the screen engine.)
 
@@ -187,7 +187,7 @@ Speaker volume override: `AudioDirector::begin()` → `setVolume(0.2f)`.
 
 ## 10. Open follow-ups
 
-- **GIF sync** — `pong-wall.gif` (real engine match, ~49 s / 554 frames) and `controller.gif`
+- **GIF sync** — `pong.gif` (real engine match, ~49 s / 554 frames) and `controller.gif`
   (separate *stylized* animation, ~12 s / 240 frames, its own scripted story) are independent
   renders, so they drift when looped side-by-side. Real fix = drive the controller render from
   the **same engine match** (export per-frame paddle-x / score / state from `dump_frames`,
@@ -209,5 +209,5 @@ Speaker volume override: `AudioDirector::begin()` → `setVolume(0.2f)`.
   (golden byte-identical, assets byte-identical) except the reviewed `speaker_fx` regen.
 - **This session** (6 commits): `KNOB_SIGN → {-1,-1}` (control feel, hardware-verified);
   corrected the wiring diagram (left column is the rotated one, derived from `TILE_MAP`) +
-  stale docs; untracked `.DS_Store`; lowered speaker volume to `0.2f`; turned off wall score
-  pips. All flashed and confirmed on the physical wall.
+  stale docs; untracked `.DS_Store`; lowered speaker volume to `0.2f`; turned off screen score
+  pips. All flashed and confirmed on the physical screen.

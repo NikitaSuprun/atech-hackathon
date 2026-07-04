@@ -1,4 +1,4 @@
-"""Render the PONG WALL full-system hardware diagram (assets/system-diagram.png)."""
+"""Render the PONG full-system hardware diagram (assets/system-diagram.png)."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ P8_RECT: Final[tuple[float, float, float, float]] = (0.428, 0.849, 0.586, 0.940)
 BOARD_W: Final[int] = 210
 BOARD_H: Final[int] = 420
 
-# wall zone
+# screen zone
 TILE: Final[int] = 70
 SEAM: Final[int] = 3
 GRID_X: Final[int] = 64
@@ -58,7 +58,7 @@ WALL_BX: Final[int] = 330
 WALL_BY: Final[float] = (GRID_Y + (GRID_Y + 6 * TILE + 5 * SEAM)) / 2 - BOARD_H / 2
 ROW_C: Final[list[float]] = [GRID_Y + i * (TILE + SEAM) + TILE / 2 for i in range(6)]
 
-# wall harness: right tiles -> ports, planar nested routing
+# screen harness: right tiles -> ports, planar nested routing
 ROW_PORT: Final[list[int]] = [13, 11, 10, 9, 7, 14]
 TRUNK_X: Final[list[int]] = [222, 227, 232, 237, 242, 247]
 LANE_Y: Final[dict[int, int]] = {13: 80, 11: 95, 10: 110, 9: 125, 7: 146}
@@ -435,7 +435,7 @@ def draw_wall(
     col_cx = GRID_X + rot_col * (TILE + SEAM) + TILE / 2  # rotated column's center x
     for row in range(6):
         rotate_icon(d_over, col_cx, GRID_Y + row * (TILE + SEAM) + TILE / 2)
-    label_y = GRID_Y - 30  # label sits in the margin above the wall
+    label_y = GRID_Y - 30  # label sits in the margin above the screen
     text(d_over, col_cx, label_y, "rotated 180°", 13.5, MUTED, anchor="mm")
     # leader down from just under the label to just above the tiles
     polyline(d_over, [(col_cx, label_y + 9), (col_cx, GRID_Y - 3)], 1.4, FAINT + (210,))
@@ -459,7 +459,7 @@ def draw_wall(
         d_over,
         cx,
         CAPTION_Y,
-        "Wall board — 12× Light Grid = one 6×18 screen",
+        "Screen board — 12× Light Grid = one 6×18 screen",
         17,
         CAPTION,
         bold=True,
@@ -777,7 +777,7 @@ def draw_footer(
 
 
 def draw_title(d_over: ImageDraw.ImageDraw) -> None:
-    a = "PONG WALL"
+    a = "PONG"
     b = "  ·  full-system hardware"
     wa = F(24, True).getlength(a) / SS
     wb = F(19).getlength(b) / SS
