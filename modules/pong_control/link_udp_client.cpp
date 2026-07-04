@@ -21,6 +21,9 @@ void LinkUdpClient::poll(uint32_t nowMs) {
     }
     if (!wasConnected_) {
         wasConnected_ = true;
+        // WiFi.begin() re-enables modem power-save, which makes the STA drop
+        // AP->client unicast UDP; must be disabled AFTER association
+        WiFi.setSleep(false);
         // rebind on every association; WiFiUDP::begin stops a stale socket first
         udp_.begin(NET_UDP_LOCAL_PORT);
         udpStarted_ = true;

@@ -30,9 +30,18 @@ int LinkUdpServer::recvRaw(void* buf, size_t maxLen) {
 
 bool LinkUdpServer::sendTo(const IPAddress& ip, uint16_t port, const void* buf, size_t len) {
     if (!up_ || port == 0) return false;
-    if (!udp_.beginPacket(ip, port)) return false;
-    udp_.write(reinterpret_cast<const uint8_t*>(buf), len);
-    return udp_.endPacket() != 0;
+    bool ok = false;
+    if (udp_.beginPacket(ip, port)) {
+        udp_.write(reinterpret_cast<const uint8_t*>(buf), len);
+        ok = udp_.endPacket() != 0;
+    }
+    // belt & braces: also broadcast — a power-saving STA can drop AP->client
+    // unicast, but broadcast is delivered after each DTIM beacon
+    if (udp_.beginPacket(IPAddress(192, 168, 4, 255), NET_UDP_LOCAL_PORT)) {
+        udp_.write(reinterpret_cast<const uint8_t*>(buf), len);
+        udp_.endPacket();
+    }
+    return ok;
 }
 
 bool LinkUdpServer::sendRaw(const void* buf, size_t len) {
