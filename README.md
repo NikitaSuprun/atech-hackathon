@@ -25,6 +25,12 @@ Two little ESP32-S3 boards, no soldering, everything clicks together.
 
 All of it is modular atech.dev hardware — tiles, knobs, screen and speaker just click into ports on the boards. The hardest physical step of the whole project was pushing firmly.
 
+### What plugs in where
+
+<img src="assets/system-diagram.png" alt="Full-system hardware diagram: wall board with 12 Light Grid tiles (6 direct, 6 rotated and cabled), laptop USB bridge, console board with two knobs, speaker and scoreboard" width="100%">
+
+*Half the wall's tiles click straight into ports 1–6; the other six are rotated 180°, mounted flush beside them, and cabled back to ports 7–14 — that's what makes twelve 3×3 tiles read as one 6×18 screen. The laptop in the middle is the USB serial bridge between the boards. Component renders by [atech.dev](https://atech.dev).*
+
 ## How to play
 
 **Both players hold their knobs in for half a second.** That's the start button — and it's also how play resumes after *every* point, so nobody ever gets ambushed by a serve while reaching for their drink. Your knob's LED ring fills up as you hold; when both players lock in, the countdown starts.
