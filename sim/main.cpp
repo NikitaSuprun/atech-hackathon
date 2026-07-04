@@ -113,8 +113,8 @@ static int selftest() {
                 else if (knob[p] > target) knob[p] -= 2;
             }
         }
-        in.knobPos[0] = knob[0];
-        in.knobPos[1] = knob[1];
+        in.knobPos[0] = KNOB_SIGN[0] * knob[0];
+        in.knobPos[1] = KNOB_SIGN[1] * knob[1];
         e.tick(in, TICK_MS);
         EngineStatus now = e.status();
         goals += d8(now.goalSeq, prev.goalSeq);
@@ -197,8 +197,8 @@ int main(int argc, char** argv) {
                 case 'q': quit = true; break;
             }
         }
-        in.knobPos[0] = knob[0];
-        in.knobPos[1] = knob[1];
+        in.knobPos[0] = KNOB_SIGN[0] * knob[0];
+        in.knobPos[1] = KNOB_SIGN[1] * knob[1];
         in.held[0] = held[0];
         in.held[1] = held[1];
 

@@ -272,8 +272,8 @@ int main(int argc, char** argv) {
         }
 
         in.held[0] = in.held[1] = holdBoth;
-        in.knobPos[0] = (int32_t)llround(knobF[0]);
-        in.knobPos[1] = (int32_t)llround(knobF[1]);
+        in.knobPos[0] = (int32_t)llround(KNOB_SIGN[0] * knobF[0]);
+        in.knobPos[1] = (int32_t)llround(KNOB_SIGN[1] * knobF[1]);
         eng.tick(in, TICK_MS);
 
         EngineStatus now = eng.status();

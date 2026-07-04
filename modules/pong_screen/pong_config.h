@@ -16,7 +16,7 @@ constexpr int   PADDLE_W         = 2;             // px on the 6-wide edge (3 = 
 constexpr float PADDLE_GRACE     = 0.35f;         // extra half-width; edge-graze = max english
 constexpr float PADDLE_PLANE_INSET = 1.5f;        // ball-center contact plane, inset from each edge
 constexpr float DETENTS_PER_CELL = 2.0f;          // full 4-cell sweep = 8 detents ~= 160 deg
-constexpr int   KNOB_SIGN[2]     = {+1, +1};      // flip per side on hardware day
+constexpr int   KNOB_SIGN[2]     = {+1, -1};      // P2 knob reversed vs P1 (confirm side on hardware)
 // Engine input contract: knob acceleration is DISABLED on the controller
 // (setAcceleration(false,1) in the module setup template) — never undo that.
 
