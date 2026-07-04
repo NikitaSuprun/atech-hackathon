@@ -106,7 +106,6 @@ GH: Final[int] = GY1 - GY0
 PAD: Final[int] = 14
 SPK: Final[tuple[float, float]] = (92.0, 476.0)
 SPK_PITCH: Final[int] = 11
-NOTE_SPAWN: Final[tuple[int, int]] = (96, 448)  # note-rise origin in speaker_fx
 
 
 class KnobFrame(TypedDict):
@@ -680,8 +679,8 @@ def speaker_fx(buf: F64, f: int) -> None:
             alpha = min(1.0, a / 3) * (1 - a / NOTE_LIFE)
             draw_note(
                 buf,
-                NOTE_SPAWN[0] + 5 * math.sin(a * 0.45 + t0),
-                NOTE_SPAWN[1] - a * 2.6,
+                SPK[0] + 5 * math.sin(a * 0.45 + t0),
+                SPK[1] - a * 2.6,
                 col,
                 alpha,
             )
