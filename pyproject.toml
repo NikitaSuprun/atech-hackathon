@@ -39,8 +39,8 @@ select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "ANN", "N", "S", "PLR2004"
 # Render/art scripts: per-pixel magic numbers (sigmas, offsets), uppercase
 # grid-dimension locals, and the g++/subprocess build call are intentional here.
 "tools/gifgen/render_controller.py" = ["PLR2004", "N806", "N803"]
-"tools/gifgen/render_wiring.py" = ["PLR2004", "N806", "N803"]
-"tools/gifgen/render_wall.py" = ["PLR2004", "N806", "N803", "S603", "S607"]
+"tools/gifgen/render_wiring.py" = ["PLR2004", "N806", "N803", "N802"]
+"tools/gifgen/render_wall.py" = ["PLR2004", "N806", "N803", "S603", "S607", "S108"]
 "tools/gifgen/ledfx.py" = ["N806", "N803"]
 "tools/serial_bridge.py" = ["S603", "S607"]
 

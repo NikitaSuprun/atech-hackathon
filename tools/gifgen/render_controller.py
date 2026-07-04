@@ -1,47 +1,57 @@
 #!/usr/bin/env python3
 """Product-shot animation of the PONG WALL controller board -> assets/controller.gif."""
 
+from __future__ import annotations
+
 import argparse
 import math
-import os
+from pathlib import Path
+from typing import Final, TypedDict
 
 import numpy as np
 from PIL import Image
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PREVIEW_DIR = os.path.join(ROOT, "tools", "gifgen", "preview")
-GIF_PATH = os.path.join(ROOT, "assets", "controller.gif")
+from gifgen import game, paths
+from gifgen.arrays import F32, F64, U8
+
+GIF_PATH: Final[Path] = paths.ASSETS / "controller.gif"
 
 # canvas / timing
-W, H = 440, 560
-FRAMES = 240
-DUR_MS = 50
+W: Final[int] = 440
+H: Final[int] = 560
+FRAMES: Final[int] = 240
+DUR_MS: Final[int] = 50
 
 # story timeline (frame indices)
-HOLD_END = 45
-COUNT_END = 75
-RALLY1_END = 115
-POINT1_END = 135
-RALLY2_END = 175
-POINT2_END = 195
-WIN_START = 215
-LOOP_FADE = 230
-POP_FRAMES = (HOLD_END, HOLD_END + 1)
-PREVIEWS = {28: "ctrl_hold", 96: "ctrl_rally", 121: "ctrl_point", 226: "ctrl_win"}
+HOLD_END: Final[int] = 45
+COUNT_END: Final[int] = 75
+RALLY1_END: Final[int] = 115
+POINT1_END: Final[int] = 135
+RALLY2_END: Final[int] = 175
+POINT2_END: Final[int] = 195
+WIN_START: Final[int] = 215
+LOOP_FADE: Final[int] = 230
+POP_FRAMES: Final[tuple[int, int]] = (HOLD_END, HOLD_END + 1)
+PREVIEWS: Final[dict[int, str]] = {
+    28: "ctrl_hold",
+    96: "ctrl_rally",
+    121: "ctrl_point",
+    226: "ctrl_win",
+}
 
 # animation tuning
-COUNT_STEP = 10
-RALLY_PERIOD = 26.0
-RALLY_SWING = 55.0
-POINT_SWEEP = 720.0
-WIN_SPIN_STEP = 33.0
-TRAIL_DECAY = 0.60
-SWEEP_DECAY = 0.74
-NOTE_LIFE = 20
-PULSE_LIFE = 16
+COUNT_STEP: Final[int] = 10
+RALLY_PERIOD: Final[float] = 26.0
+RALLY_SWING: Final[float] = 55.0
+POINT_SWEEP: Final[float] = 720.0
+WIN_SPIN_STEP: Final[float] = 33.0
+TRAIL_DECAY: Final[float] = 0.60
+SWEEP_DECAY: Final[float] = 0.74
+NOTE_LIFE: Final[int] = 20
+PULSE_LIFE: Final[int] = 16
 
 # palette / encoding
-PAL_SAMPLES = (
+PAL_SAMPLES: Final[tuple[int, ...]] = (
     0,
     20,
     47,
@@ -62,45 +72,77 @@ PAL_SAMPLES = (
     228,
     235,
 )
-PAL_BRIGHT, PAL_DARK, PAL_SPLIT_LUM = 96, 159, 60
-TRANSPARENT = 255
+PAL_BRIGHT: Final[int] = 96
+PAL_DARK: Final[int] = 159
+PAL_SPLIT_LUM: Final[int] = 60
+TRANSPARENT: Final[int] = 255
 
-WHITE = np.array([1.0, 1.0, 1.0])
-CYAN = np.array([0.0, 200 / 255, 1.0])
-AMBER = np.array([1.0, 120 / 255, 0.0])
-GOLD = np.array([1.0, 180 / 255, 0.0])
-RED = np.array([1.0, 45 / 255, 30 / 255])
+# P1/P2 identity colors come from the shared game contract (float64 for byte-exact
+# compositing); render-only accents stay local.
+WHITE: Final[F64] = np.array([1.0, 1.0, 1.0])
+CYAN: Final[F64] = np.array(game.COLORS["P1"], np.float64) / 255.0
+AMBER: Final[F64] = np.array(game.COLORS["P2"], np.float64) / 255.0
+GOLD: Final[F64] = np.array([1.0, 180 / 255, 0.0])
+RED: Final[F64] = np.array([1.0, 45 / 255, 30 / 255])
 
 # board geometry
-K1 = (128.0, 168.0)
-K2 = (312.0, 168.0)
-CAP_R = 46.0
-RING_R = 64.0
-RING_LEDS = 12
-LED_STEP = 360.0 / RING_LEDS
+K1: Final[tuple[float, float]] = (128.0, 168.0)
+K2: Final[tuple[float, float]] = (312.0, 168.0)
+CAP_R: Final[float] = 46.0
+RING_R: Final[float] = 64.0
+RING_LEDS: Final[int] = 12
+LED_STEP: Final[float] = 360.0 / RING_LEDS
 
-BX0, BY0, BX1, BY1 = 108, 292, 332, 412
-GX0, GY0, GX1, GY1 = 120, 304, 320, 400
-GW, GH, PAD = GX1 - GX0, GY1 - GY0, 14
-SPK = (92.0, 476.0)
-SPK_PITCH = 11
+BX0: Final[int] = 108
+BY0: Final[int] = 292
+BX1: Final[int] = 332
+BY1: Final[int] = 412
+GX0: Final[int] = 120
+GY0: Final[int] = 304
+GX1: Final[int] = 320
+GY1: Final[int] = 400
+GW: Final[int] = GX1 - GX0
+GH: Final[int] = GY1 - GY0
+PAD: Final[int] = 14
+SPK: Final[tuple[float, float]] = (92.0, 476.0)
+SPK_PITCH: Final[int] = 11
+NOTE_SPAWN: Final[tuple[int, int]] = (96, 448)  # note-rise origin in speaker_fx
 
 
-def inv_tone(hexs):
+class KnobFrame(TypedDict):
+    press: float
+    rot1: float
+    rot2: float
+    m1: float
+    m2: float
+    c1: F64
+    c2: F64
+    g1: float
+    g2: float
+    acc1: F64
+    acc2: F64
+    pop: bool
+    ov1: tuple[F64, F64] | None
+    ov2: tuple[F64, F64] | None
+    ring1: F64
+    ring2: F64
+
+
+def inv_tone(hexs: str) -> F64:
     v = np.array([int(hexs[i : i + 2], 16) for i in (1, 3, 5)]) / 255.0
     u = np.clip(v, 0.0, 0.995) ** (1 / 0.9)
     return u / (1 - u)
 
 
-BG_C = inv_tone("#0b0d10")
-PCB_C = inv_tone("#161a21")
-BEZ_C = inv_tone("#0c0f14")
-GLASS_C = inv_tone("#05070b")
-HOLE_C = inv_tone("#06080b")
-M_EDGE = inv_tone("#1a1e25")
-M_FACE = inv_tone("#566070")
+BG_C: Final[F64] = inv_tone("#0b0d10")
+PCB_C: Final[F64] = inv_tone("#161a21")
+BEZ_C: Final[F64] = inv_tone("#0c0f14")
+GLASS_C: Final[F64] = inv_tone("#05070b")
+HOLE_C: Final[F64] = inv_tone("#06080b")
+M_EDGE: Final[F64] = inv_tone("#1a1e25")
+M_FACE: Final[F64] = inv_tone("#566070")
 
-FONT = {
+FONT: Final[dict[str, tuple[str, ...]]] = {
     "A": ("01110", "10001", "10001", "11111", "10001", "10001", "10001"),
     "C": ("01110", "10001", "10000", "10000", "10000", "10001", "01110"),
     "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
@@ -127,10 +169,20 @@ FONT = {
     ".": ("00000", "00000", "00000", "00000", "00000", "00000", "00100"),
     " ": ("00000",) * 7,
 }
-NOTE = ("00100", "00110", "00101", "00100", "00100", "01100", "11100")
+NOTE: Final[tuple[str, ...]] = (
+    "00100",
+    "00110",
+    "00101",
+    "00100",
+    "00100",
+    "01100",
+    "11100",
+)
 
 
-def glow(buf, x, y, color, inten=1.0, scale=1.0):
+def glow(
+    buf: F64, x: float, y: float, color: F64, inten: float = 1.0, scale: float = 1.0
+) -> None:
     core = color + (WHITE - color) * 0.7
     for sig, wgt, col in (
         (14 * scale, 0.30, color),
@@ -150,7 +202,7 @@ def glow(buf, x, y, color, inten=1.0, scale=1.0):
         buf[y0:y1, x0:x1] += g[..., None] * col
 
 
-def box1d(a, r, axis):
+def box1d(a: F64, r: int, axis: int) -> F64:
     if r <= 0:
         return a
     pad = [(0, 0)] * a.ndim
@@ -164,7 +216,7 @@ def box1d(a, r, axis):
     return (c[tuple(i0)] - c[tuple(i1)]) / (2 * r + 1)
 
 
-def blur(img, sigma):
+def blur(img: F64, sigma: float) -> F64:
     r = max(1, int(sigma * 0.7))
     out = img
     for _ in range(3):
@@ -172,13 +224,15 @@ def blur(img, sigma):
     return out
 
 
-def rrect_d(xx, yy, x0, y0, x1, y1, r):
+def rrect_d(
+    xx: F64, yy: F64, x0: float, y0: float, x1: float, y1: float, r: float
+) -> F64:
     cx = np.clip(xx, x0 + r, x1 - r)
     cy = np.clip(yy, y0 + r, y1 - r)
     return np.hypot(xx - cx, yy - cy) - r
 
 
-def splat_line(acc, x0, y0, x1, y1):
+def splat_line(acc: F64, x0: float, y0: float, x1: float, y1: float) -> None:
     n = int(math.hypot(x1 - x0, y1 - y0) * 2) + 2
     ts = np.linspace(0.0, 1.0, n)
     xs = x0 + (x1 - x0) * ts
@@ -192,11 +246,19 @@ def splat_line(acc, x0, y0, x1, y1):
             np.add.at(acc, (iy + dy, ix + dx), wx * wy)
 
 
-def text_w(s, scale):
+def text_w(s: str, scale: int) -> int:
     return len(s) * 6 * scale - scale
 
 
-def draw_text(img, s, cx, cy, scale, colors, inten=1.0):
+def draw_text(
+    img: F64,
+    s: str,
+    cx: float,
+    cy: float,
+    scale: int,
+    colors: F64 | list[F64],
+    inten: float = 1.0,
+) -> None:
     x0 = int(round(cx - text_w(s, scale) / 2))
     y0 = int(round(cy - 3.5 * scale))
     sz = max(1, scale - 1) if scale >= 3 else scale
@@ -209,12 +271,12 @@ def draw_text(img, s, cx, cy, scale, colors, inten=1.0):
                     img[py : py + sz, px : px + sz] += col * inten
 
 
-def ring_pos(center, k):
+def ring_pos(center: tuple[float, float], k: int) -> tuple[float, float]:
     a = math.radians(-90 + k * LED_STEP)
     return center[0] + RING_R * math.cos(a), center[1] + RING_R * math.sin(a)
 
 
-def build_static():
+def build_static() -> tuple[F64, F64, F64, F64]:
     rng = np.random.default_rng(7)
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float64)
 
@@ -265,7 +327,7 @@ def build_static():
     S = S * (1 - gm3) + glass * gm3
     spill = 0.30 + 0.70 * gm[GY0 - PAD : GY1 + PAD, GX0 - PAD : GX1 + PAD, None]
 
-    def hole(cx, cy, r, depth=0.85):
+    def hole(cx: float, cy: float, r: float, depth: float = 0.85) -> None:
         R = int(r + 4)
         hx0, hy0 = int(cx) - R, int(cy) - R
         hdx = np.arange(hx0, hx0 + 2 * R + 1) - cx
@@ -294,7 +356,7 @@ def build_static():
     d4 = rrect_d(xx, yy, SPK[0] - 30, SPK[1] - 30, SPK[0] + 30, SPK[1] + 30, 12)
     S += (np.exp(-(d4**2) / 1.4) * 0.022)[..., None]
 
-    def screw(cx, cy):
+    def screw(cx: float, cy: float) -> None:
         r = 7.5
         R = 12
         sx0, sy0 = int(cx) - R, int(cy) - R
@@ -320,7 +382,7 @@ def build_static():
     for sx, sy in ((52, 52), (388, 52), (52, 508), (388, 508)):
         screw(sx, sy)
 
-    def smd(x, y, w, h):
+    def smd(x: int, y: int, w: int, h: int) -> None:
         body = inv_tone("#171b22")
         pad = inv_tone("#252b34")
         S[y : y + h, x : x + w] = S[y : y + h, x : x + w] * 0.35 + body
@@ -351,7 +413,14 @@ def build_static():
     return S, spill, vig, dith
 
 
-def draw_knob(buf, center, rot, press, accent, mglow=1.0):
+def draw_knob(
+    buf: F64,
+    center: tuple[float, float],
+    rot: float,
+    press: float,
+    accent: F64,
+    mglow: float = 1.0,
+) -> None:
     cx, cy = center
     rc = CAP_R * (1 - 0.045 * press)
     R = int(CAP_R + 12)
@@ -404,14 +473,14 @@ def draw_knob(buf, center, rot, press, accent, mglow=1.0):
 
 
 class State:
-    def __init__(self):
-        self.r1 = np.zeros(RING_LEDS)
-        self.r2 = np.zeros(RING_LEDS)
-        self.prev1 = -90.0
-        self.prev2 = -90.0
+    def __init__(self) -> None:
+        self.r1: F64 = np.zeros(RING_LEDS)
+        self.r2: F64 = np.zeros(RING_LEDS)
+        self.prev1: float = -90.0
+        self.prev2: float = -90.0
 
 
-def mark_sweep(ring, prev, rot):
+def mark_sweep(ring: F64, prev: float, rot: float) -> None:
     d = ((rot - prev + 180) % 360) - 180
     steps = max(1, int(abs(d) / (LED_STEP / 2)) + 1)
     for i in range(steps + 1):
@@ -419,21 +488,21 @@ def mark_sweep(ring, prev, rot):
         ring[int(round((a + 90) / LED_STEP)) % RING_LEDS] = 1.0
 
 
-def rally_rot(f, t0, sign):
+def rally_rot(f: int, t0: int, sign: int) -> float:
     return -90 + sign * RALLY_SWING * math.sin(2 * math.pi * (f - t0) / RALLY_PERIOD)
 
 
-def in_rally(f):
+def in_rally(f: int) -> bool:
     return f < RALLY1_END or POINT1_END <= f < RALLY2_END or POINT2_END <= f < WIN_START
 
 
-def smoothstep(u):
+def smoothstep(u: float) -> float:
     u = min(1.0, max(0.0, u))
     return u * u * (3 - 2 * u)
 
 
-def update(f, st):
-    p = {
+def update(f: int, st: State) -> KnobFrame:
+    p: KnobFrame = {
         "press": 0.0,
         "rot1": -90.0,
         "rot2": -90.0,
@@ -448,6 +517,8 @@ def update(f, st):
         "pop": f in POP_FRAMES,
         "ov1": None,
         "ov2": None,
+        "ring1": np.zeros(RING_LEDS),
+        "ring2": np.zeros(RING_LEDS),
     }
     if f < HOLD_END:
         p["press"] = 1.0
@@ -523,7 +594,7 @@ def update(f, st):
     return p
 
 
-def tft_layer(f):
+def tft_layer(f: int) -> F64:
     t = np.zeros((GH + 2 * PAD, GW + 2 * PAD, 3))
     cx, cy = PAD + GW / 2, PAD + GH / 2
     if f < HOLD_END:
@@ -554,19 +625,19 @@ def tft_layer(f):
     return t
 
 
-def add_tft(buf, t, spill):
+def add_tft(buf: F64, t: F64, spill: F64) -> None:
     out = t * 1.1 + blur(t, 1.6) * 0.8 + blur(t, 5.0) * 0.55
     out[::2] *= 0.93
     buf[GY0 - PAD : GY1 + PAD, GX0 - PAD : GX1 + PAD] += out * spill
 
 
-EVENTS = (
+EVENTS: Final[tuple[tuple[int, F64], ...]] = (
     (RALLY1_END, CYAN),
     (RALLY2_END, AMBER),
     (WIN_START, GOLD),
     (WIN_START + 9, GOLD),
 )
-NOTES = (
+NOTES: Final[tuple[tuple[int, F64], ...]] = (
     (RALLY1_END + 1, CYAN),
     (RALLY1_END + 7, CYAN),
     (RALLY2_END + 1, AMBER),
@@ -577,14 +648,14 @@ NOTES = (
 )
 
 
-def draw_note(buf, x, y, color, alpha):
+def draw_note(buf: F64, x: float, y: float, color: F64, alpha: float) -> None:
     for ry, row in enumerate(NOTE):
         for rx, c in enumerate(row):
             if c == "1":
                 glow(buf, x + rx * 2, y + ry * 2, color, 0.30 * alpha, 0.22)
 
 
-def speaker_fx(buf, f):
+def speaker_fx(buf: F64, f: int) -> None:
     for t0, col in EVENTS:
         a = f - t0
         if 0 <= a <= PULSE_LIFE:
@@ -607,22 +678,28 @@ def speaker_fx(buf, f):
         a = f - t0
         if 0 <= a < NOTE_LIFE:
             alpha = min(1.0, a / 3) * (1 - a / NOTE_LIFE)
-            draw_note(buf, 96 + 5 * math.sin(a * 0.45 + t0), 448 - a * 2.6, col, alpha)
+            draw_note(
+                buf,
+                NOTE_SPAWN[0] + 5 * math.sin(a * 0.45 + t0),
+                NOTE_SPAWN[1] - a * 2.6,
+                col,
+                alpha,
+            )
 
 
-def draw_all(f, p, static, spill):
+def draw_all(f: int, p: KnobFrame, static: F64, spill: F64) -> F64:
     buf = static.copy()
     draw_knob(buf, K1, p["rot1"], p["press"], p["acc1"], p["m1"])
     draw_knob(buf, K2, p["rot2"], p["press"], p["acc2"], p["m2"])
-    for center, key, ovk, gk in (
-        (K1, "ring1", "ov1", "g1"),
-        (K2, "ring2", "ov2", "g2"),
+    for center, ring, col0, ov, gain0 in (
+        (K1, p["ring1"], p["c1"], p["ov1"], p["g1"]),
+        (K2, p["ring2"], p["c2"], p["ov2"], p["g2"]),
     ):
-        arr, col, gain = p[key], p["c1" if key == "ring1" else "c2"], p[gk]
+        arr, col, gain = ring, col0, gain0
         if p["pop"]:
             arr, col, gain = np.full(RING_LEDS, 1.1), WHITE, 1.0
-        elif p[ovk] is not None:
-            arr, col = p[ovk]
+        elif ov is not None:
+            arr, col = ov
             gain = 1.0
         for k in range(RING_LEDS):
             if arr[k] > 0.03:
@@ -633,14 +710,14 @@ def draw_all(f, p, static, spill):
     return buf
 
 
-def tonemap(buf, vig, dith):
+def tonemap(buf: F64, vig: F64, dith: F64) -> U8:
     x = buf * vig
     t = x / (1 + x)
     v = np.clip(t, 0, 1) ** 0.9 * 255 + dith
     return np.clip(v, 0, 255).astype(np.uint8)
 
 
-def remap_exact(frames, pal_rgb):
+def remap_exact(frames: list[U8], pal_rgb: F32) -> list[U8]:
     packed = [
         (fr[..., 0].astype(np.uint32) << 16)
         | (fr[..., 1].astype(np.uint32) << 8)
@@ -658,17 +735,20 @@ def remap_exact(frames, pal_rgb):
     return [near[np.searchsorted(uniq, p.ravel())].reshape(p.shape) for p in packed]
 
 
-def pal_from(pixels, n):
+def pal_from(pixels: U8, n: int) -> F32:
     w = 2048
     h = (len(pixels) + w - 1) // w
     img = np.zeros((h * w, 3), np.uint8)
     img[: len(pixels)] = pixels
     img[len(pixels) :] = pixels[0]
-    q = Image.fromarray(img.reshape(h, w, 3)).quantize(n, method=Image.MEDIANCUT)
-    return np.array(q.getpalette()[: n * 3], np.float32).reshape(n, 3)
+    q = Image.fromarray(img.reshape(h, w, 3)).quantize(
+        n, method=Image.Quantize.MEDIANCUT
+    )
+    pal = q.getpalette() or []
+    return np.array(pal[: n * 3], np.float32).reshape(n, 3)
 
 
-def write_gif(frames):
+def write_gif(frames: list[U8]) -> int:
     px = np.concatenate([frames[i].reshape(-1, 3) for i in PAL_SAMPLES])
     lum = px.mean(axis=1)
     # split the palette so glow ramps and whites keep enough entries
@@ -680,7 +760,7 @@ def write_gif(frames):
     )
     idx_frames = remap_exact(frames, pal_rgb)
     pal = pal_rgb.astype(np.uint8).ravel().tolist() + [255, 0, 255]
-    imgs = []
+    imgs: list[Image.Image] = []
     prev = None
     for idx in idx_frames:
         d = idx if prev is None else np.where(idx == prev, np.uint8(TRANSPARENT), idx)
@@ -698,22 +778,22 @@ def write_gif(frames):
         disposal=1,
         optimize=False,
     )
-    return os.path.getsize(GIF_PATH)
+    return GIF_PATH.stat().st_size
 
 
-def main():
+def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "--previews", action="store_true", help="render preview stills only"
     )
     args = ap.parse_args()
 
-    os.makedirs(PREVIEW_DIR, exist_ok=True)
-    os.makedirs(os.path.dirname(GIF_PATH), exist_ok=True)
+    paths.ensure(paths.PREVIEW)
+    paths.ensure(GIF_PATH.parent)
     static, spill, vig, dith = build_static()
 
     st = State()
-    frames = []
+    frames: list[U8] = []
     first_lin = None
     for f in range(FRAMES):
         p = update(f, st)
@@ -727,7 +807,7 @@ def main():
             buf = buf * (1 - s) + first_lin * s
         u8 = tonemap(buf, vig, dith)
         if f in PREVIEWS:
-            Image.fromarray(u8).save(os.path.join(PREVIEW_DIR, PREVIEWS[f] + ".png"))
+            Image.fromarray(u8).save(paths.PREVIEW / f"{PREVIEWS[f]}.png")
             print(f"preview {PREVIEWS[f]}.png  (frame {f})")
         if not args.previews:
             frames.append(u8)

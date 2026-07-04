@@ -77,6 +77,8 @@ else
 fi
 
 run_stage "py format" uv run --group dev ruff format --check tools
+run_stage "py lint" uv run --group dev ruff check tools
+run_stage "py types" uv run --group dev basedpyright tools
 run_stage "py drift" env PYTHONPATH=tools uv run --group dev python -m gifgen.check_cpp_constants
 
 printf '\n== summary ==\n%s' "$SUMMARY"

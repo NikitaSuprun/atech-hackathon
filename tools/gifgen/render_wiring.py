@@ -1,86 +1,100 @@
 """Render the PONG WALL full-system hardware diagram (assets/system-diagram.png)."""
 
+from __future__ import annotations
+
 import math
 from pathlib import Path
+from typing import Final
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
-ROOT = Path(__file__).resolve().parents[2]
-ATECH = ROOT / "assets" / "atech"
-PREVIEW = ROOT / "tools" / "gifgen" / "preview"
-FINAL = ROOT / "assets" / "system-diagram.png"
+from gifgen import game, paths
+from gifgen.palette import RGB8
+
+ATECH: Final[Path] = paths.ATECH
+PREVIEW: Final[Path] = paths.PREVIEW
+FINAL: Final[Path] = paths.ASSETS / "system-diagram.png"
 
 # canvas (all layout in 1x coordinates, drawn at SS supersample)
-W, H = 1600, 900
-SS = 2
+W: Final[int] = 1600
+H: Final[int] = 900
+SS: Final[int] = 2
 
-BG = (11, 13, 16)
-INK = (232, 235, 240)
-CAPTION = (207, 212, 220)
-MUTED = (139, 147, 160)
-FAINT = (90, 98, 112)
-CYAN = (0, 200, 255)
-AMBER = (255, 120, 0)
-CABLE = (183, 189, 198)
-STUB = (150, 158, 168)
-USB_C = (216, 220, 226)
-GRAY_LEAD = (168, 175, 186)
-CASING = (4, 6, 9, 215)
-CARD = (216, 219, 224)
-CARD_TEXT = (32, 36, 44)
-CARD_SUB = (96, 104, 118)
+BG: Final[tuple[int, ...]] = (11, 13, 16)
+INK: Final[tuple[int, ...]] = (232, 235, 240)
+CAPTION: Final[tuple[int, ...]] = (207, 212, 220)
+MUTED: Final[tuple[int, ...]] = (139, 147, 160)
+FAINT: Final[tuple[int, ...]] = (90, 98, 112)
+CYAN: Final[tuple[int, ...]] = RGB8["P1"]
+AMBER: Final[tuple[int, ...]] = RGB8["P2"]
+CABLE: Final[tuple[int, ...]] = (183, 189, 198)
+STUB: Final[tuple[int, ...]] = (150, 158, 168)
+USB_C: Final[tuple[int, ...]] = (216, 220, 226)
+GRAY_LEAD: Final[tuple[int, ...]] = (168, 175, 186)
+CASING: Final[tuple[int, ...]] = (4, 6, 9, 215)
+CARD: Final[tuple[int, ...]] = (216, 219, 224)
+CARD_TEXT: Final[tuple[int, ...]] = (32, 36, 44)
+CARD_SUB: Final[tuple[int, ...]] = (96, 104, 118)
 
 # motherboard port geometry, measured from 14port-motherboard-V2.png (222x445)
-PORT_ROW_Y = [0.078, 0.247, 0.415, 0.583, 0.752, 0.919]
-SLOT_LX = (0.131, 0.333)
-SLOT_RX = (0.667, 0.865)
-SLOT_HY = 0.062
-P7_RECT = (0.428, 0.058, 0.586, 0.152)
-P8_RECT = (0.428, 0.849, 0.586, 0.940)
+PORT_ROW_Y: Final[list[float]] = [0.078, 0.247, 0.415, 0.583, 0.752, 0.919]
+SLOT_LX: Final[tuple[float, float]] = (0.131, 0.333)
+SLOT_RX: Final[tuple[float, float]] = (0.667, 0.865)
+SLOT_HY: Final[float] = 0.062
+P7_RECT: Final[tuple[float, float, float, float]] = (0.428, 0.058, 0.586, 0.152)
+P8_RECT: Final[tuple[float, float, float, float]] = (0.428, 0.849, 0.586, 0.940)
 
-BOARD_W, BOARD_H = 210, 420
+BOARD_W: Final[int] = 210
+BOARD_H: Final[int] = 420
 
 # wall zone
-TILE = 70
-SEAM = 3
-GRID_X, GRID_Y = 64, 168
-GRID_R = GRID_X + 2 * TILE + SEAM
-WALL_BX = 330
-WALL_BY = (GRID_Y + (GRID_Y + 6 * TILE + 5 * SEAM)) / 2 - BOARD_H / 2
-ROW_C = [GRID_Y + i * (TILE + SEAM) + TILE / 2 for i in range(6)]
+TILE: Final[int] = 70
+SEAM: Final[int] = 3
+GRID_X: Final[int] = 64
+GRID_Y: Final[int] = 168
+GRID_R: Final[int] = GRID_X + 2 * TILE + SEAM
+WALL_BX: Final[int] = 330
+WALL_BY: Final[float] = (GRID_Y + (GRID_Y + 6 * TILE + 5 * SEAM)) / 2 - BOARD_H / 2
+ROW_C: Final[list[float]] = [GRID_Y + i * (TILE + SEAM) + TILE / 2 for i in range(6)]
 
 # wall harness: right tiles -> ports, planar nested routing
-ROW_PORT = [13, 11, 10, 9, 7, 14]
-TRUNK_X = [222, 227, 232, 237, 242, 247]
-LANE_Y = {13: 80, 11: 95, 10: 110, 9: 125, 7: 146}
-DROP_X = {13: 620, 11: 605, 10: 590, 9: 575}
-HOOK_X = 547
-BOTTOM_LANE_Y = 658
-BOTTOM_UP_X = 598
+ROW_PORT: Final[list[int]] = [13, 11, 10, 9, 7, 14]
+TRUNK_X: Final[list[int]] = [222, 227, 232, 237, 242, 247]
+LANE_Y: Final[dict[int, int]] = {13: 80, 11: 95, 10: 110, 9: 125, 7: 146}
+DROP_X: Final[dict[int, int]] = {13: 620, 11: 605, 10: 590, 9: 575}
+HOOK_X: Final[int] = 547
+BOTTOM_LANE_Y: Final[int] = 658
+BOTTOM_UP_X: Final[int] = 598
 
 # console zone
-CONS_BX, CONS_BY = 1150, WALL_BY
-CARD_W, CARD_H = 150, 168
-CARD_LX, CARD_RX = 968, 1392
-CARD_TY, CARD_BY2 = 190, 402
+CONS_BX: Final[int] = 1150
+CONS_BY: Final[float] = WALL_BY
+CARD_W: Final[int] = 150
+CARD_H: Final[int] = 168
+CARD_LX: Final[int] = 968
+CARD_RX: Final[int] = 1392
+CARD_TY: Final[int] = 190
+CARD_BY2: Final[int] = 402
 
 # center zone
-LAP_CX = 804
-LID_W, LID_H = 190, 120
-LID_X, LID_Y = LAP_CX - LID_W / 2, 348
+LAP_CX: Final[int] = 804
+LID_W: Final[int] = 190
+LID_H: Final[int] = 120
+LID_X: Final[float] = LAP_CX - LID_W / 2
+LID_Y: Final[int] = 348
 
-CAPTION_Y = 686
-NOTE_Y = 710
-FOOTER_LINE_Y = 750
-BOM_Y = 778
+CAPTION_Y: Final[int] = 686
+NOTE_Y: Final[int] = 710
+FOOTER_LINE_Y: Final[int] = 750
+BOM_Y: Final[int] = 778
 
-FONT_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-FONT_REG = "/System/Library/Fonts/Supplemental/Arial.ttf"
-_fonts = {}
+FONT_BOLD: Final[str] = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+FONT_REG: Final[str] = "/System/Library/Fonts/Supplemental/Arial.ttf"
+_fonts: dict[tuple[float, bool], ImageFont.FreeTypeFont] = {}
 
 
-def F(size, bold=False):
+def F(size: float, bold: bool = False) -> ImageFont.FreeTypeFont:
     key = (size, bold)
     if key not in _fonts:
         _fonts[key] = ImageFont.truetype(
@@ -89,16 +103,16 @@ def F(size, bold=False):
     return _fonts[key]
 
 
-def sc(*pts):
+def sc(*pts: float) -> list[float]:
     return [p * SS for p in pts]
 
 
-def load(name):
+def load(name: str) -> Image.Image:
     im = Image.open(ATECH / name).convert("RGBA")
     return im.crop(im.getbbox())
 
 
-def make_background():
+def make_background() -> Image.Image:
     yy, xx = np.mgrid[0 : H * SS, 0 : W * SS].astype(np.float32)
     nx = (xx / (W * SS) - 0.5) * 2
     ny = (yy / (H * SS) - 0.5) * 2
@@ -111,15 +125,26 @@ def make_background():
     return Image.fromarray(arr.clip(0, 255).astype(np.uint8), "RGB").convert("RGBA")
 
 
-def new_layer(canvas):
+def new_layer(canvas: Image.Image) -> tuple[Image.Image, ImageDraw.ImageDraw]:
     layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
     return layer, ImageDraw.Draw(layer)
 
 
-def paste_shadowed(canvas, img, x, y, blur=11, dy=7, alpha=150):
+def paste_shadowed(
+    canvas: Image.Image,
+    img: Image.Image,
+    x: float,
+    y: float,
+    blur: float = 11,
+    dy: float = 7,
+    alpha: int = 150,
+) -> None:
+    def _fade(a: int) -> int:
+        return a * alpha // 255
+
     sil = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    sil.putalpha(img.getchannel("A").point(lambda a: a * alpha // 255))
-    pad = blur * SS * 3
+    sil.putalpha(img.getchannel("A").point(_fade))
+    pad = int(blur * SS * 3)
     sh = Image.new("RGBA", (img.width + 2 * pad, img.height + 2 * pad), (0, 0, 0, 0))
     sh.paste(sil, (pad, pad))
     sh = sh.filter(ImageFilter.GaussianBlur(blur * SS / 2.2))
@@ -127,7 +152,12 @@ def paste_shadowed(canvas, img, x, y, blur=11, dy=7, alpha=150):
     canvas.alpha_composite(img, (int(x * SS), int(y * SS)))
 
 
-def polyline(d, pts, w, fill):
+def polyline(
+    d: ImageDraw.ImageDraw,
+    pts: list[tuple[float, float]],
+    w: float,
+    fill: tuple[int, ...],
+) -> None:
     spts = [(x * SS, y * SS) for x, y in pts]
     lw = max(1, int(round(w * SS)))
     d.line(spts, fill=fill, width=lw, joint="curve")
@@ -136,7 +166,9 @@ def polyline(d, pts, w, fill):
         d.ellipse([p[0] - r, p[1] - r, p[0] + r, p[1] + r], fill=fill)
 
 
-def rounded_path(pts, r=12, seg=14):
+def rounded_path(
+    pts: list[tuple[float, float]], r: float = 12, seg: int = 14
+) -> list[tuple[float, float]]:
     # orthogonal-ish polyline with quadratic fillets at interior corners
     out = [pts[0]]
     for i in range(1, len(pts) - 1):
@@ -161,7 +193,13 @@ def rounded_path(pts, r=12, seg=14):
     return out
 
 
-def bez(p0, p1, p2, p3, n=90):
+def bez(
+    p0: tuple[float, float],
+    p1: tuple[float, float],
+    p2: tuple[float, float],
+    p3: tuple[float, float],
+    n: int = 90,
+) -> list[tuple[float, float]]:
     out = []
     for i in range(n + 1):
         t = i / n
@@ -181,21 +219,44 @@ def bez(p0, p1, p2, p3, n=90):
     return out
 
 
-def cable(d, pts, w=3.0, color=CABLE):
+def cable(
+    d: ImageDraw.ImageDraw,
+    pts: list[tuple[float, float]],
+    w: float = 3.0,
+    color: tuple[int, ...] = CABLE,
+) -> None:
     polyline(d, pts, w + 3.0, CASING)
     polyline(d, pts, w, color)
 
 
-def dot(d, x, y, r, fill):
+def dot(
+    d: ImageDraw.ImageDraw, x: float, y: float, r: float, fill: tuple[int, ...]
+) -> None:
     d.ellipse(sc(x - r, y - r, x + r, y + r), fill=fill)
 
 
-def text(d, x, y, s, size, fill, bold=False, anchor="la"):
+def text(
+    d: ImageDraw.ImageDraw,
+    x: float,
+    y: float,
+    s: str,
+    size: float,
+    fill: tuple[int, ...],
+    bold: bool = False,
+    anchor: str = "la",
+) -> float:
     d.text((x * SS, y * SS), s, font=F(size, bold), fill=fill, anchor=anchor)
     return d.textlength(s, font=F(size, bold)) / SS
 
 
-def round_rect(d, rect, radius, fill=None, outline=None, width=2):
+def round_rect(
+    d: ImageDraw.ImageDraw,
+    rect: tuple[float, float, float, float],
+    radius: float,
+    fill: tuple[int, ...] | None = None,
+    outline: tuple[int, ...] | None = None,
+    width: float = 2,
+) -> None:
     d.rounded_rectangle(
         sc(*rect),
         radius=radius * SS,
@@ -208,7 +269,7 @@ def round_rect(d, rect, radius, fill=None, outline=None, width=2):
 # ---- port geometry ---------------------------------------------------------
 
 
-def slot_rect(bx, by, port):
+def slot_rect(bx: float, by: float, port: int) -> tuple[float, float, float, float]:
     if port in (7, 8):
         f = P7_RECT if port == 7 else P8_RECT
         return (
@@ -227,11 +288,20 @@ def slot_rect(bx, by, port):
     )
 
 
-def port_y(by, port):
+def port_y(by: float, port: int) -> float:
     return by + PORT_ROW_Y[(port - 1) if port <= 6 else (port - 9)] * BOARD_H
 
 
-def highlight_ports(d, bx, by, ports, color, pad=4, fill_a=26, line_a=215):
+def highlight_ports(
+    d: ImageDraw.ImageDraw,
+    bx: float,
+    by: float,
+    ports: tuple[int, ...],
+    color: tuple[int, ...],
+    pad: float = 4,
+    fill_a: int = 26,
+    line_a: int = 215,
+) -> tuple[float, float, float, float]:
     rects = [slot_rect(bx, by, p) for p in ports]
     x0 = min(r[0] for r in rects) - pad
     y0 = min(r[1] for r in rects) - pad
@@ -248,11 +318,17 @@ def highlight_ports(d, bx, by, ports, color, pad=4, fill_a=26, line_a=215):
     return (x0, y0, x1, y1)
 
 
-def dim_port(d, bx, by, port):
+def dim_port(d: ImageDraw.ImageDraw, bx: float, by: float, port: int) -> None:
     round_rect(d, slot_rect(bx, by, port), 4, fill=BG + (120,))
 
 
-def rotate_icon(d, cx, cy, r=7, color=(40, 45, 54, 220)):
+def rotate_icon(
+    d: ImageDraw.ImageDraw,
+    cx: float,
+    cy: float,
+    r: float = 7,
+    color: tuple[int, ...] = (40, 45, 54, 220),
+) -> None:
     lw = max(1, int(round(1.9 * SS)))
     d.arc(sc(cx - r, cy - r, cx + r, cy + r), start=210, end=330, fill=color, width=lw)
     d.arc(sc(cx - r, cy - r, cx + r, cy + r), start=30, end=150, fill=color, width=lw)
@@ -271,12 +347,17 @@ def rotate_icon(d, cx, cy, r=7, color=(40, 45, 54, 220)):
 # ---- zones -----------------------------------------------------------------
 
 
-def draw_wall(canvas, d_over, tile_img, board_img):
+def draw_wall(
+    canvas: Image.Image,
+    d_over: ImageDraw.ImageDraw,
+    tile_img: Image.Image,
+    board_img: Image.Image,
+) -> None:
     bx, by = WALL_BX, WALL_BY
     wires, d = new_layer(canvas)
 
-    # direct-plug stubs: left tiles -> ports 1-6 (hidden where they pass behind right tiles)
-    stub_pts = []
+    # direct-plug stubs: left tiles -> ports 1-6 (hidden behind the right tiles)
+    stub_pts: list[tuple[tuple[float, float], tuple[float, float]]] = []
     for i in range(6):
         y0, y1 = ROW_C[i], port_y(by, i + 1)
         stub_pts.append(((GRID_X + TILE - 6, y0), (bx - 4, y1)))
@@ -285,6 +366,7 @@ def draw_wall(canvas, d_over, tile_img, board_img):
     for row, port in enumerate(ROW_PORT):
         ry = ROW_C[row] + 16
         tx = TRUNK_X[row]
+        pts: list[tuple[float, float]]
         if port == 14:
             pts = [
                 (GRID_R - 4, ry),
@@ -361,7 +443,7 @@ def draw_wall(canvas, d_over, tile_img, board_img):
     )
 
     # port treatments
-    for p in (1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 13, 14):
+    for p in game.PORT_ORDER:
         r = slot_rect(bx, by, p)
         round_rect(
             d_over,
@@ -388,7 +470,7 @@ def draw_wall(canvas, d_over, tile_img, board_img):
     text(d_over, cx, NOTE_Y, "the game engine runs here", 13.5, MUTED, anchor="mm")
 
 
-def draw_laptop(canvas, d_over):
+def draw_laptop(canvas: Image.Image, d_over: ImageDraw.ImageDraw) -> None:
     layer, d = new_layer(canvas)
     lx, ly = LID_X, LID_Y
 
@@ -487,8 +569,17 @@ def draw_laptop(canvas, d_over):
 
 
 def card(
-    canvas, d_over, x, y, img, label, sub=None, badge=None, badge_color=None, ring=None
-):
+    canvas: Image.Image,
+    d_over: ImageDraw.ImageDraw,
+    x: float,
+    y: float,
+    img: Image.Image,
+    label: str,
+    sub: str | None = None,
+    badge: str | None = None,
+    badge_color: tuple[int, ...] | None = None,
+    ring: tuple[float, float, float, tuple[int, ...]] | None = None,
+) -> None:
     layer, d = new_layer(canvas)
     sh = Image.new(
         "RGBA", (int((CARD_W + 60) * SS), int((CARD_H + 60) * SS)), (0, 0, 0, 0)
@@ -509,7 +600,7 @@ def card(
 
     iw, ih = img.size
     scale = min(96 * SS / iw, 96 * SS / ih)
-    img2 = img.resize((int(iw * scale), int(ih * scale)), Image.LANCZOS)
+    img2 = img.resize((int(iw * scale), int(ih * scale)), Image.Resampling.LANCZOS)
     ix = int(x * SS + (CARD_W * SS - img2.width) / 2)
     iy = int(y * SS + 12 * SS + (96 * SS - img2.height) / 2)
     canvas.alpha_composite(img2, (ix, iy))
@@ -523,7 +614,7 @@ def card(
             outline=ring[3] + (235,),
             width=int(2.6 * SS),
         )
-    if badge:
+    if badge and badge_color is not None:
         round_rect(d_over, (x + 9, y + 9, x + 43, y + 29), 6, fill=badge_color + (255,))
         text(
             d_over, x + 26, y + 19.5, badge, 13, (255, 255, 255), bold=True, anchor="mm"
@@ -534,7 +625,14 @@ def card(
         text(d_over, x + CARD_W / 2, ty + 19, sub, 13, CARD_SUB, anchor="mm")
 
 
-def draw_console(canvas, d_over, board_img, knob_img, speaker_img, screen_img):
+def draw_console(
+    canvas: Image.Image,
+    d_over: ImageDraw.ImageDraw,
+    board_img: Image.Image,
+    knob_img: Image.Image,
+    speaker_img: Image.Image,
+    screen_img: Image.Image,
+) -> None:
     bx, by = CONS_BX, CONS_BY
     paste_shadowed(canvas, board_img, bx, by)
 
@@ -570,7 +668,12 @@ def draw_console(canvas, d_over, board_img, knob_img, speaker_img, screen_img):
         canvas, d_over, CARD_RX, CARD_BY2, screen_img, "Scoreboard", sub="Screen module"
     )
 
-    def leader(p_from, p_to, color, w=2.4):
+    def leader(
+        p_from: tuple[float, float],
+        p_to: tuple[float, float],
+        color: tuple[int, ...],
+        w: float = 2.4,
+    ) -> None:
         polyline(d_over, [p_from, p_to], w, color + (235,))
         dot(d_over, *p_from, 2.9, color + (255,))
         dot(d_over, *p_to, 3.3, color + (255,))
@@ -621,7 +724,9 @@ def draw_console(canvas, d_over, board_img, knob_img, speaker_img, screen_img):
     )
 
 
-def draw_footer(canvas, d_over, imgs):
+def draw_footer(
+    canvas: Image.Image, d_over: ImageDraw.ImageDraw, imgs: dict[str, Image.Image]
+) -> None:
     layer, d = new_layer(canvas)
     d.line(
         sc(64, FOOTER_LINE_Y, W - 64, FOOTER_LINE_Y), fill=(255, 255, 255, 20), width=SS
@@ -635,14 +740,14 @@ def draw_footer(canvas, d_over, imgs):
     ]
     chip = 52
     widths = []
-    for img, count, name in items:
+    for _img, count, name in items:
         tw = F(15, True).getlength(count) / SS + 4 + F(15).getlength(name) / SS
         widths.append(chip + 10 + tw)
     gap = 46
     x = (W - (sum(widths) + gap * (len(items) - 1))) / 2
     cy = BOM_Y + chip / 2
     positions = []
-    for (img, count, name), iw in zip(items, widths):
+    for (img, count, name), iw in zip(items, widths, strict=True):
         round_rect(
             d,
             (x, BOM_Y, x + chip, BOM_Y + chip),
@@ -657,7 +762,8 @@ def draw_footer(canvas, d_over, imgs):
     for x, img, count, name in positions:
         s = min((chip - 10) * SS / img.width, (chip - 10) * SS / img.height)
         img2 = img.resize(
-            (max(1, int(img.width * s)), max(1, int(img.height * s))), Image.LANCZOS
+            (max(1, int(img.width * s)), max(1, int(img.height * s))),
+            Image.Resampling.LANCZOS,
         )
         canvas.alpha_composite(
             img2,
@@ -672,7 +778,7 @@ def draw_footer(canvas, d_over, imgs):
     text(d_over, W - 64, H - 26, "component renders: atech.dev", 13, FAINT, anchor="rm")
 
 
-def draw_title(d_over):
+def draw_title(d_over: ImageDraw.ImageDraw) -> None:
     a = "PONG WALL"
     b = "  ·  full-system hardware"
     wa = F(24, True).getlength(a) / SS
@@ -682,8 +788,8 @@ def draw_title(d_over):
     text(d_over, x + wa, 46, b, 19, MUTED, anchor="lm")
 
 
-def main():
-    PREVIEW.mkdir(parents=True, exist_ok=True)
+def main() -> None:
+    paths.ensure(PREVIEW)
 
     board_src = load("14port-motherboard-V2.png")
     tile_src = load("Light.png")
@@ -691,8 +797,8 @@ def main():
     screen_src = load("Screen.png")
     speaker_src = load("Speaker.png")
 
-    board = board_src.resize((BOARD_W * SS, BOARD_H * SS), Image.LANCZOS)
-    tile = tile_src.resize((TILE * SS, TILE * SS), Image.LANCZOS)
+    board = board_src.resize((BOARD_W * SS, BOARD_H * SS), Image.Resampling.LANCZOS)
+    tile = tile_src.resize((TILE * SS, TILE * SS), Image.Resampling.LANCZOS)
 
     canvas = make_background()
     over, d_over = new_layer(canvas)
@@ -714,7 +820,7 @@ def main():
     )
     canvas.alpha_composite(over)
 
-    final = canvas.convert("RGB").resize((W, H), Image.LANCZOS)
+    final = canvas.convert("RGB").resize((W, H), Image.Resampling.LANCZOS)
     final.save(PREVIEW / "wiring_full.png", optimize=True)
     for name, box in (
         ("wall", (30, 40, 700, 740)),

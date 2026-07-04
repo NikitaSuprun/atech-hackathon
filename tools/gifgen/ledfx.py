@@ -1,53 +1,66 @@
 """Glowing-LED wall renderer: static background plate, precomputed gaussian
 light sprites, additive float32 compositing, filmic tonemap."""
 
-import numpy as np
+from __future__ import annotations
 
-# LED geometry (px)
-PITCH = 18
-GRID_W, GRID_H = 6, 18
-TILE_LEDS = 3
-TILE_COLS, TILE_ROWS = 2, 6
-TILE_PAD = 6
-SEAM = 7
-MARGIN = 24
-TILE_PX = TILE_LEDS * PITCH + 2 * TILE_PAD
-CANVAS_W = 2 * MARGIN + TILE_COLS * TILE_PX + (TILE_COLS - 1) * SEAM
-CANVAS_H = 2 * MARGIN + TILE_ROWS * TILE_PX + (TILE_ROWS - 1) * SEAM
+from typing import Final
+
+import numpy as np
+from numpy.typing import NDArray
+
+from gifgen import game
+from gifgen.arrays import F32, U8, Frame
+
+# LED geometry (px); wall dimensions come from the shared game contract
+PITCH: Final[int] = 18
+GRID_W: Final[int] = game.W
+GRID_H: Final[int] = game.H
+TILE_LEDS: Final[int] = game.TILE_DIM
+TILE_COLS: Final[int] = game.TILE_COLS
+TILE_ROWS: Final[int] = game.TILE_ROWS
+TILE_PAD: Final[int] = 6
+SEAM: Final[int] = 7
+MARGIN: Final[int] = 24
+TILE_PX: Final[int] = TILE_LEDS * PITCH + 2 * TILE_PAD
+CANVAS_W: Final[int] = 2 * MARGIN + TILE_COLS * TILE_PX + (TILE_COLS - 1) * SEAM
+CANVAS_H: Final[int] = 2 * MARGIN + TILE_ROWS * TILE_PX + (TILE_ROWS - 1) * SEAM
 
 # tonemap
-EXPOSURE = 2.2
-WHITE_PT = 3.0
-GAMMA = 0.9
+EXPOSURE: Final[float] = 2.2
+WHITE_PT: Final[float] = 3.0
+GAMMA: Final[float] = 0.9
 
 # light sprites: wide halo + mid glow + hot core (overdriven-WS2812 look)
-HALO_SIGMA, HALO_W = 1.00 * PITCH, 0.30
-MID_SIGMA, MID_W = 0.42 * PITCH, 0.75
-CORE_SIGMA, CORE_W = 0.16 * PITCH, 1.60
-WHITE_LERP = 0.6
+HALO_SIGMA: Final[float] = 1.00 * PITCH
+HALO_W: Final[float] = 0.30
+MID_SIGMA: Final[float] = 0.42 * PITCH
+MID_W: Final[float] = 0.75
+CORE_SIGMA: Final[float] = 0.16 * PITCH
+CORE_W: Final[float] = 1.60
+WHITE_LERP: Final[float] = 0.6
 
 # background palette (display space)
-BEZEL = "#0b0d10"
-TILE_FACE = "#08090c"
-TILE_EDGE = "#14161b"
-PKG = "#1c1f24"
-PKG_DOT = "#101216"
-CORNER_R = 14
-VIGNETTE = 0.08
-PKG_SIZE = 9
-DOT_SIZE = 3
+BEZEL: Final[str] = "#0b0d10"
+TILE_FACE: Final[str] = "#08090c"
+TILE_EDGE: Final[str] = "#14161b"
+PKG: Final[str] = "#1c1f24"
+PKG_DOT: Final[str] = "#101216"
+CORNER_R: Final[int] = 14
+VIGNETTE: Final[float] = 0.08
+PKG_SIZE: Final[int] = 9
+DOT_SIZE: Final[int] = 3
 
 
-def _hex(c):
+def _hex(c: str) -> F32:
     return np.array([int(c[i : i + 2], 16) / 255.0 for i in (1, 3, 5)], np.float32)
 
 
-def _lin(c):
+def _lin(c: str) -> F32:
     # invert gamma+exposure so background colors land near their display values
     return (_hex(c) ** (1.0 / GAMMA)) / EXPOSURE
 
 
-def _gauss(sigma):
+def _gauss(sigma: float) -> F32:
     r = int(np.ceil(2.6 * sigma))
     ax = np.arange(-r, r + 1, dtype=np.float32)
     g = np.exp(-(ax[:, None] ** 2 + ax[None, :] ** 2) / (2.0 * sigma * sigma))
@@ -55,11 +68,14 @@ def _gauss(sigma):
     return np.clip((g - edge) / (1.0 - edge), 0.0, 1.0).astype(np.float32)
 
 
-_SPRITES = [(_gauss(HALO_SIGMA), HALO_W), (_gauss(MID_SIGMA), MID_W)]
-_CORE = _gauss(CORE_SIGMA)
+_SPRITES: Final[list[tuple[F32, float]]] = [
+    (_gauss(HALO_SIGMA), HALO_W),
+    (_gauss(MID_SIGMA), MID_W),
+]
+_CORE: Final[F32] = _gauss(CORE_SIGMA)
 
 
-def led_centers():
+def led_centers() -> NDArray[np.int32]:
     c = np.zeros((GRID_H, GRID_W, 2), np.int32)
     for gy in range(GRID_H):
         tr, j = divmod(gy, TILE_LEDS)
@@ -74,10 +90,10 @@ def led_centers():
     return c
 
 
-_CENTERS = led_centers()
+_CENTERS: Final[NDArray[np.int32]] = led_centers()
 
 
-def make_background():
+def make_background() -> F32:
     albedo = np.zeros((CANVAS_H, CANVAS_W, 3), np.float32)
     albedo[:] = _lin(BEZEL)
 
@@ -114,7 +130,7 @@ def make_background():
     return (albedo * (light * mask)[:, :, None]).astype(np.float32)
 
 
-def _add_sprite(buf, kernel, cx, cy, color):
+def _add_sprite(buf: F32, kernel: F32, cx: int, cy: int, color: F32) -> None:
     r = kernel.shape[0] // 2
     x0, x1 = cx - r, cx + r + 1
     y0, y1 = cy - r, cy + r + 1
@@ -124,7 +140,7 @@ def _add_sprite(buf, kernel, cx, cy, color):
     buf[y0:y1, x0:x1] += kernel[ky0 : ky0 + y1 - y0, kx0 : kx0 + x1 - x0, None] * color
 
 
-def render_frame(frame, background):
+def render_frame(frame: Frame, background: F32) -> U8:
     """frame: (18, 6, 3) uint8 engine framebuffer -> (H, W, 3) uint8 image."""
     buf = background.copy()
     for gy, gx in np.argwhere(frame.any(axis=2)):
