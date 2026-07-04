@@ -12,3 +12,4 @@ wheels/
 # Atech/Pong build artifacts
 .atech/
 sim/pong_sim
+tools/gifgen/preview/
