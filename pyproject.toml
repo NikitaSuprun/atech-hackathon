@@ -1,9 +1,51 @@
 [project]
 name = "atech-hackathon"
 version = "0.1.0"
-description = "Add your description here"
+description = "PONG WALL — an ESP32 two-board Pong game on an LED wall, with a desktop simulator and Python render tooling."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "atech>=1.0.0a3",
 ]
+
+[project.optional-dependencies]
+render = [
+    "numpy>=2",
+    "pillow>=10",
+]
+bridge = [
+    "pyserial>=3.5",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15",
+    "basedpyright>=1.39",
+    "types-pyserial>=3.5",
+    "numpy>=2",
+    "pillow>=10",
+    "pyserial>=3.5",
+]
+
+[tool.ruff]
+target-version = "py311"
+src = ["tools"]
+extend-exclude = ["**/build", "**/.pio", "tools/gifgen/preview"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "ANN", "N", "S", "PLR2004"]
+
+[tool.ruff.lint.per-file-ignores]
+# Render/art scripts: per-pixel magic numbers (sigmas, offsets), uppercase
+# grid-dimension locals, and the g++/subprocess build call are intentional here.
+"tools/gifgen/render_controller.py" = ["PLR2004", "N806", "N803"]
+"tools/gifgen/render_wiring.py" = ["PLR2004", "N806", "N803"]
+"tools/gifgen/render_wall.py" = ["PLR2004", "N806", "N803", "S603", "S607"]
+"tools/gifgen/ledfx.py" = ["N806", "N803"]
+"tools/serial_bridge.py" = ["S603", "S607"]
+
+[tool.basedpyright]
+include = ["tools"]
+exclude = ["**/build", "**/.pio", "**/__pycache__", "tools/gifgen/preview"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"

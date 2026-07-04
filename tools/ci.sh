@@ -76,6 +76,8 @@ else
   record "sim selftest" "SKIP (no sim/Makefile)"
 fi
 
+run_stage "py format" uv run --group dev ruff format --check tools
+
 printf '\n== summary ==\n%s' "$SUMMARY"
 if [ "$FAILED" -ne 0 ]; then
   echo 'RESULT: FAIL'
