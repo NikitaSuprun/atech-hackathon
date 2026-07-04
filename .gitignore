@@ -12,6 +12,7 @@ wheels/
 # Atech/Pong build artifacts
 .atech/
 sim/pong_sim
+sim/gamehost_*
 tools/gifgen/preview/
 
 # macOS
