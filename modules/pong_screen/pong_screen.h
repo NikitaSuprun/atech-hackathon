@@ -7,7 +7,7 @@
 #include "pong_engine.h"
 #include "net_config.h"
 #include "compositor.h"
-#include "link_udp_server.h"
+#include "link_serial.h"
 
 // Arduino glue: hosts the 12 wall tiles, pumps UDP input into per-controller
 // slots, drives the pure engine at a fixed step, pushes dirty tiles through
@@ -44,7 +44,7 @@ private:
     ControllerSlot slots_[PONG_MAX_CONTROLLERS];
     pong::Engine engine_;
     Compositor comp_;
-    LinkUdpServer link_;
+    LinkSerial link_;   // USB bridge transport (was LinkUdpServer)
     pong::Frame frame_;
     int n_ = 0;
     bool ok_ = false;

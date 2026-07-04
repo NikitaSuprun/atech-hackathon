@@ -1,5 +1,9 @@
 #include "pong_control.h"
 
+// temporary bring-up telemetry; remove when the link is proven stable
+#define PONG_CTRL_DEBUG 1
+static uint32_t txOk_ = 0;
+
 void PongControl::begin(RotaryEncoder* k1, RotaryEncoder* k2, Speaker* spk, ST7735_TFT* tft) {
     link_.begin();
     audio_.begin(spk);
@@ -16,6 +20,15 @@ void PongControl::service(int32_t p1Pos, bool p1Held, int32_t p2Pos, bool p2Held
 
     link_.poll(now);
 
+#ifdef PONG_CTRL_DEBUG
+    static uint32_t dbgMs = 0;
+    if (now - dbgMs >= 1000) {
+        dbgMs = now;
+        Serial.printf("{\"type\":\"log\",\"module\":\"pong_control\",\"up\":%d,\"seq\":%u,\"fb\":%d,\"tx\":%u}\n",
+                      (int)link_.isUp(), (unsigned)seq_, (int)tracker_.linked(), (unsigned)txOk_);
+    }
+#endif
+
     if (link_.isUp() && now - lastSendMs_ >= INPUT_PERIOD_MS) {
         PongInputPacket pkt = {};
         pkt.magic = PONG_MAGIC;
@@ -27,7 +40,7 @@ void PongControl::service(int32_t p1Pos, bool p1Held, int32_t p2Pos, bool p2Held
         pkt.uptimeMs = now;
         pkt.knobPos[0] = p1Pos;
         pkt.knobPos[1] = p2Pos;
-        link_.sendRaw(&pkt, sizeof(pkt));
+        if (link_.sendRaw(&pkt, sizeof(pkt))) ++txOk_;
         lastSendMs_ = now;
     }
 

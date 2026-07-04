@@ -3,8 +3,8 @@
 
 // CANONICAL network constants (symlinked into modules/pong_control/ — edit only here).
 
-#define NET_SSID "atech-pong"
-#define NET_PASS "pong4242"                       // WPA2, >= 8 chars
+#define NET_SSID "nikita-pong-x7"
+#define NET_PASS "suprun4242"                     // WPA2, >= 8 chars
 
 constexpr uint8_t  NET_CHANNEL         = 6;       // set least-busy of 1/6/11 at the venue
 constexpr uint16_t NET_UDP_PORT        = 47420;   // server (screen board) listen port

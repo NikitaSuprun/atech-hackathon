@@ -1,4 +1,6 @@
 #include "pong_screen.h"
+
+static uint32_t s_rxAny = 0, s_rxOk = 0;
 #include <esp_system.h>
 #include <string.h>
 
@@ -105,9 +107,10 @@ void PongScreen::tick() {
         pong::EngineStatus est = engine_.status();
         Serial.printf(
             "{\"type\":\"log\",\"module\":\"pong_screen\",\"state\":%d,"
-            "\"score\":[%d,%d],\"linked\":%d,\"ap\":%d,\"held\":%d}\n",
+            "\"score\":[%d,%d],\"linked\":%d,\"ap\":%d,\"held\":%d,\"rxAny\":%u,\"rxOk\":%u}\n",
             (int)est.state, (int)est.score[0], (int)est.score[1],
-            (int)linked, (int)link_.isUp(), (int)est.heldBits);
+            (int)linked, (int)link_.isUp(), (int)est.heldBits,
+            (unsigned)s_rxAny, (unsigned)s_rxOk);
     }
 #endif
 }
@@ -117,6 +120,7 @@ void PongScreen::pumpInput(uint32_t now) {
         uint8_t buf[64];
         int n = link_.recvRaw(buf, sizeof(buf));
         if (n <= 0) break;
+        ++s_rxAny;
         if (n != (int)sizeof(PongInputPacket)) continue;
         PongInputPacket pkt;
         memcpy(&pkt, buf, sizeof(pkt));
@@ -133,6 +137,7 @@ void PongScreen::pumpInput(uint32_t now) {
             }
         }
         s.everSeen = true;
+        ++s_rxOk;
         s.lastRxMs = now;
         s.lastSeq = pkt.seq;
         s.lastUptime = pkt.uptimeMs;

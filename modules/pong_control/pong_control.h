@@ -10,7 +10,7 @@
 #include "audio_director.h"
 #include "score_display.h"
 #include "ring_fx.h"
-#include "link_udp_client.h"
+#include "link_serial.h"
 
 // Controller glue: samples arrive via service() args (module.yaml loop
 // template), inputs go out at 50 Hz, feedback drains through the tracker
@@ -21,7 +21,7 @@ public:
     void service(int32_t p1Pos, bool p1Held, int32_t p2Pos, bool p2Held);
 
 private:
-    LinkUdpClient link_;
+    LinkSerial link_;   // USB bridge transport (was LinkUdpClient)
     FeedbackTracker tracker_;
     AudioDirector audio_;
     ScoreDisplay display_;

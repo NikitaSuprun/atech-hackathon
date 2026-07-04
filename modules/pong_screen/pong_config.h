@@ -97,4 +97,4 @@ constexpr bool ATTRACT_CHIRP_ENABLED = false;
 constexpr bool SPEED_TINT_BALL       = false;     // polish: white -> warm as speed rises
 
 // #define PONG_CALIBRATION_MODE 1   // identify/verify patterns instead of the game
-// #define PONG_DEBUG 1              // 1 Hz status line on Serial (visible in atech monitor)
+#define PONG_DEBUG 1              // 1 Hz status line on Serial (visible in atech monitor)
