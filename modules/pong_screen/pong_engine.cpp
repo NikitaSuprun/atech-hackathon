@@ -347,6 +347,7 @@ void Engine::drawBall(Frame& f, float s) const {
 }
 
 void Engine::drawPips(Frame& f, float s, bool blinkNewest) const {
+    if (!WALL_SCORE_PIPS) return;
     for (int p = 0; p < 2; ++p) {
         int y = PIP_ROW[p];
         Color c = scaleC(p == 0 ? COL_P1 : COL_P2, s);

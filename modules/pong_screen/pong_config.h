@@ -102,6 +102,7 @@ constexpr TileCfg TILE_MAP[NUM_TILES] = {
 
 // ---------------- feature flags ----------------
 constexpr bool NET_DOTS              = false;     // user: no dots mid-field
+constexpr bool WALL_SCORE_PIPS       = false;     // user: no score pips on the wall (confusing)
 constexpr bool ATTRACT_CHIRP_ENABLED = false;
 constexpr bool SPEED_TINT_BALL       = false;     // polish: white -> warm as speed rises
 
