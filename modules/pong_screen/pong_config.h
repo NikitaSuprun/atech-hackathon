@@ -90,7 +90,7 @@ constexpr uint8_t RING_BRIGHT_ATTRACT = 20;
 constexpr uint8_t RING_BRIGHT_MAX     = 120;      // rings sit at eye level
 
 // ---------------- feature flags ----------------
-constexpr bool NET_DOTS              = true;      // cut first if it reads as noise
+constexpr bool NET_DOTS              = false;     // user: no dots mid-field
 constexpr bool WALL_BLIP_ENABLED     = true;      // wall-bounce audio blip
 constexpr bool RALLY_PULSE_ENABLED   = false;     // heartbeat bg "music" (off by default)
 constexpr bool ATTRACT_CHIRP_ENABLED = false;
