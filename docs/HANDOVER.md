@@ -19,10 +19,12 @@ Onboarding for the **Atech Arcade** platform — an extensible ESP32-S3 game con
 | `modules/screen_render/` | **The dumb renderer**: `screen_render.h` (compositor glue), `light_engine.h` (glow), `neo_tile.h` (WS2812 sink), `screen_render_board.h` (transport glue). Host test: `test_console.cpp`. |
 | `modules/link/` | Transport adapters over the `PongLink` seam: `link_frame.h` (COBS de-framer + MTU), `link_cobs_serial.h` (primary), `link_frame_sink.h` (OS→wire), `link_loopback.h` (tests), `link_espnow.h` (stub). Host test: `test_link.cpp`. |
 | `modules/console_e2e/` | End-to-end test: real brain → wire → real screen. `test_e2e.cpp`. |
+| `firmware/brain/`, `firmware/screen/` | **The shipped, flashed console firmware** — hand-authored PlatformIO projects. Brain = `BrainOS` + all 10 games + knobs + speaker + the ST7735 TFT dashboard; screen = the SK6812/line-B `screen_render` stack. Both ESP32-S3 boards run these. |
 | `modules/pong_screen/`, `modules/pong_control/` | The **original Pong** firmware. `screen_render` reuses its `Compositor` + `pong_config.h` (`TILE_MAP`, tile geometry). Still the code the `screen/`/`controller/` projects build today. |
 | `sim/` | Desktop host: `game_main.cpp` (interactive terminal / `--dump` / `--selftest` for any game) + `Makefile`. `pong_sim` is the legacy Pong sim. |
-| `tools/` | `serial_bridge.py` (board↔board USB relay), `eval/run.py` (aesthetic-eval + visual-regression), `gifgen/` (README asset renderers), `ci.sh`. |
-| `host/dashboard/` | Web-Serial PC mirror (`index.html`) — Chrome/Edge; a Mock mode needs no board. |
+| `tools/` | `console_bridge.py` (board↔board USB relay for the console), `twin_server.py` (one-command deploy: bridge + live browser twin over SSE), `serial_bridge.py` (legacy Pong `PKT:` relay), `eval/run.py` (aesthetic-eval + visual-regression), `gifgen/` (README asset renderers), `ci.sh`. |
+| `host/dashboard/` | The **browser twin** (`index.html`): runs the real `TftDashboard` in WASM; live over SSE when served by `tools/twin_server.py`, or standalone via Web-Serial / Mock (no board). |
+| `web/` | WASM build of the twin: `main_wasm.cpp` (the real `BrainOS` + `TftDashboard`) + `build.sh`. |
 | `screen/`, `controller/` | atech PlatformIO projects (`project.yaml` + generated `build/`, gitignored). |
 | `docs/`, `gtm/` | These docs; product/business framing. `docs/PLAN.md` is the original Pong spec (kept for history). |
 
@@ -82,7 +84,7 @@ For the on-hardware flash flow, board identification, power/brownout, and the li
 ## Gotchas
 
 - **Two boards, identical USB descriptors.** Re-identify by serial output, not port number,
-  and stop `serial_bridge.py` before any reflash (it holds both ports).
+  and stop `console_bridge.py` before any reflash (it holds both ports).
 - **`atech upload` reuses a stale `firmware.bin`** if you skip `atech build` — always build,
   confirm the change synced into `build/lib/…`, then upload.
 - **20% brightness clamp is real.** The NeoPixel driver caps at 51/255, so anything below
@@ -90,9 +92,10 @@ For the on-hardware flash flow, board identification, power/brownout, and the li
 - **`TICK_MS` is defined twice** — in `console::` (`config.h`) and the global pong scope
   (`pong_config.h`). Qualify it (`console::TICK_MS`) in code that includes both (the E2E test
   does). De-duping the two Pong-era `Color`/`TICK_MS` overlaps is a known cleanup item.
-- **`screen/` and `controller/` still build the old Pong.** The `console_os` + `screen_render`
-  firmware is host/sim/E2E-verified but not yet wired into a board project — that's the
-  Integration stage (needs hardware for the flash). See [STATE.md](STATE.md).
+- **`screen/` and `controller/` still build the old Pong.** The shipped console firmware lives in
+  its own PlatformIO projects `firmware/brain/` + `firmware/screen/` (both boards are flashed);
+  the legacy atech `screen/`/`controller/` projects are retained but still build the old Pong.
+  See [STATE.md](STATE.md).
 - **Conventions:** comments minimal and on the line above (not inline); Python is a real
   package (`PYTHONPATH=tools`, absolute imports, parametrized `Final[X]`, no `sys.path`
   hacks); small self-contained commits, no AI co-author trailer.
