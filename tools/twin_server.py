@@ -13,7 +13,11 @@ Then open  http://<this-machine-ip>:<port>/  on any device on the LAN.
 The dashboard auto-connects to /stream and mirrors the console (matrix + the
 real TFT via WASM + live knobs). Ctrl-C to stop.
 """
+
+from __future__ import annotations
+
 import base64
+import contextlib
 import glob
 import http.server
 import os
@@ -23,18 +27,22 @@ import socketserver
 import sys
 import threading
 import time
+from typing import Final
 
 import serial  # pyserial (in .venv)
 
-DASH_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "host", "dashboard"))
+DASH_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "host", "dashboard")
+)
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+N_BOARDS: Final[int] = 2  # brain + screen
 
 # --- SSE client registry: each connected dashboard gets a byte queue ---
-_clients = set()
+_clients: set[queue.Queue[bytes]] = set()
 _lock = threading.Lock()
 
 
-def broadcast(data: bytes):
+def broadcast(data: bytes) -> None:
     with _lock:
         dead = []
         for q in _clients:
@@ -46,14 +54,14 @@ def broadcast(data: bytes):
             _clients.discard(q)
 
 
-def id_ports():
+def id_ports() -> tuple[str | None, str | None]:
     """Return (brain, screen): the brain continuously streams CFRM frames; the
     screen is silent. Sniff each port's byte rate to tell them apart."""
     ports = sorted(glob.glob("/dev/cu.usbmodem*"))
-    if len(ports) < 2:
+    if len(ports) < N_BOARDS:
         return None, None
 
-    def rate(p):
+    def rate(p: str) -> int:
         try:
             s = serial.Serial(p, 115200, timeout=0.2)
         except Exception:
@@ -73,7 +81,7 @@ def id_ports():
     return brain, screen
 
 
-def bridge_loop():
+def bridge_loop() -> None:
     """Relay brain<->screen forever (auto-detect + auto-reconnect), and fan the
     brain->host bytes out to the SSE clients."""
     while True:
@@ -93,7 +101,7 @@ def bridge_loop():
             print("[twin] open failed:", e)
             time.sleep(1.5)
             continue
-        print(f"[twin] bridge up: {brain_p} (brain) -> {screen_p} (screen)  +  SSE fan-out")
+        print(f"[twin] bridge up: {brain_p} (brain) -> {screen_p} (screen) + SSE")
         try:
             while True:
                 d = brain.read(1)
@@ -101,29 +109,27 @@ def bridge_loop():
                     n = brain.in_waiting
                     if n:
                         d += brain.read(n)
-                    screen.write(d)   # feed the physical wall
-                    broadcast(d)      # feed every network dashboard
+                    screen.write(d)  # feed the physical wall
+                    broadcast(d)  # feed every network dashboard
                 back = screen.read(256)  # non-blocking: returns at once
                 if back:
                     brain.write(back)
         except Exception as e:
             print("[twin] bridge dropped, reconnecting:", e)
             for s in (brain, screen):
-                try:
+                with contextlib.suppress(Exception):
                     s.close()
-                except Exception:
-                    pass
             time.sleep(1.5)
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *a, **k):
-        super().__init__(*a, directory=DASH_DIR, **k)
+    def __init__(self, *a: object, **k: object) -> None:
+        super().__init__(*a, directory=DASH_DIR, **k)  # type: ignore
 
-    def log_message(self, format, *args):
+    def log_message(self, format: str, *args: object) -> None:
         pass  # quiet
 
-    def do_GET(self):
+    def do_GET(self) -> None:
         if self.path == "/stream":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -131,7 +137,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Connection", "keep-alive")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            q = queue.Queue(maxsize=512)
+            q: queue.Queue[bytes] = queue.Queue(maxsize=512)
             with _lock:
                 _clients.add(q)
             try:
@@ -139,8 +145,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     data = q.get()
                     self.wfile.write(b"data:" + base64.b64encode(data) + b"\n\n")
                     self.wfile.flush()
-            except Exception:
-                pass
+            except Exception:  # noqa: S110
+                pass  # SSE client disconnected, routine
             finally:
                 with _lock:
                     _clients.discard(q)
@@ -152,11 +158,11 @@ class ThreadingHTTP(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def handle_error(self, request, client_address):
-        pass  # SSE clients disconnect routinely — don't spew tracebacks
+    def handle_error(self, request: object, client_address: object) -> None:
+        pass  # SSE clients disconnect routinely -- don't spew tracebacks
 
 
-def lan_ip():
+def lan_ip() -> str:
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -169,8 +175,10 @@ def lan_ip():
 
 if __name__ == "__main__":
     threading.Thread(target=bridge_loop, daemon=True).start()
-    srv = ThreadingHTTP(("0.0.0.0", PORT), Handler)
-    print(f"[twin] dashboard live at  http://{lan_ip()}:{PORT}/   (also http://localhost:{PORT}/)")
+    srv = ThreadingHTTP(("0.0.0.0", PORT), Handler)  # noqa: S104
+    print(
+        f"[twin] dashboard live at  http://{lan_ip()}:{PORT}/   (also http://localhost:{PORT}/)"
+    )
     print("[twin] physical wall + network dashboards run together. Ctrl-C to stop.")
     try:
         srv.serve_forever()
