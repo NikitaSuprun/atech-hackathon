@@ -18,8 +18,10 @@ driver:
 
 templates:
   globals: |
+    #include "link_cobs_serial.h"
     NeoTile {{ instance }}_tile({{ pin_a }});
-    ScreenRenderBoard {{ instance }};
+    LinkCobsSerial {{ instance }}_link;              // wired primary transport
+    ScreenRenderBoard {{ instance }}({{ instance }}_link);
   setup: |
     {{ instance }}_tile.begin();
     {
@@ -29,10 +31,10 @@ templates:
                                     &t7, &t9, &t10, &t11, &t13, &{{ instance }}_tile };
       // Stub LightProfile until include/console/themes.h lands (THEMES[].light).
       console::LightProfile _lp{40, 80, 200, 96, 100};
-      {{ instance }}.begin(_t, 12, _lp);
+      {{ instance }}.begin(_t, 12, _lp, millis());
     }
   loop: |
-    {{ instance }}.tick();
+    {{ instance }}.tick(millis());
 
 events: []
 actions: []

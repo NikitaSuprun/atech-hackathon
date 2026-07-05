@@ -1,8 +1,8 @@
 #pragma once
-#include <Arduino.h>
+#include <stdint.h>
 #include "console/config.h"
 #include "console/frame_proto.h"
-#include "link_cobs_serial.h"
+#include "pong_link.h"
 #include "screen_render.h"
 
 // Console SCREEN firmware entry point — the board glue that composes the DUMB
@@ -12,19 +12,25 @@
 // engine toward the canvas once per tick. The compositor's dirty cache means
 // only changed tiles hit the LEDs; a periodic heartbeat force-repaints to heal
 // WS2812 glitches. Mirrors modules/pong_screen/pong_screen.{h,cpp} in shape.
+//
+// The transport (a PongLink) and the clock are INJECTED: the caller owns the
+// link — LinkCobsSerial on the wire, the ESP-NOW/failover link, or a host
+// LinkLoopback — and passes millis() (or a synthetic clock in host tests). That
+// keeps this glue transport-agnostic and host-testable end to end.
 class ScreenRenderBoard {
 public:
+    explicit ScreenRenderBoard(PongLink& link) : link_(link) {}
+
     // tiles[] in wiring/port order (matches TILE_MAP); n should be NUM_TILES.
-    void begin(console::TileSink** tiles, int n, const console::LightProfile& lp) {
+    void begin(console::TileSink** tiles, int n, const console::LightProfile& lp, uint32_t nowMs) {
         n_ = n;
         for (int i = 0; i < console::SCREEN_PX; ++i) canvas_[i] = console::BLACK;
         renderer_.begin(tiles, n, lp);
         ok_ = link_.begin() && (n == NUM_TILES);
-        lastTickMs_ = lastPaintMs_ = millis();
+        lastTickMs_ = lastPaintMs_ = nowMs;
     }
 
-    void tick() {
-        uint32_t now = millis();
+    void tick(uint32_t now) {
         link_.poll(now);
         if ((uint32_t)(now - lastTickMs_) < TICK_MS) return;
         lastTickMs_ = now;
@@ -60,9 +66,13 @@ public:
 
     bool ok() const { return ok_; }
 
+    // The persistent logical canvas the link has decoded so far (pre-glow). Read
+    // only — for host E2E assertions and passive twins.
+    const console::Color* canvas() const { return canvas_; }
+
 private:
     console::ScreenRenderer renderer_;
-    LinkCobsSerial          link_;
+    PongLink&               link_;
     console::Color          canvas_[console::SCREEN_PX];
     int                     n_ = 0;
     bool                    ok_ = false;
