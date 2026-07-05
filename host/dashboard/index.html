@@ -67,7 +67,7 @@
   button.btn.on{background:color-mix(in srgb,var(--accent) 16%,var(--panel));border-color:var(--accent);color:var(--accent)}
 
   /* ---- layout ---- */
-  .grid{display:grid;grid-template-columns:minmax(210px,270px) minmax(320px,1fr) minmax(280px,330px);gap:16px;align-items:start}
+  .grid{display:grid;grid-template-columns:minmax(300px,400px) minmax(300px,1fr) minmax(240px,290px);gap:16px;align-items:start}
   @media (max-width:1120px){.grid{grid-template-columns:minmax(200px,250px) 1fr}}
   @media (max-width:760px){.grid{grid-template-columns:1fr}}
 
@@ -90,8 +90,8 @@
   }
   .bezel::after{content:"";position:absolute;inset:6px;border-radius:10px;pointer-events:none;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 3px,rgba(0,0,0,.14) 3px 4px);mix-blend-mode:multiply;opacity:.5}
-  #screen{display:block;width:auto;max-height:min(58vh,520px);border-radius:4px}
-  .cap{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:13px;
+  #screen{display:block;width:auto;max-height:min(84vh,900px);border-radius:4px}
+  .cap{display:none;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:13px;
     font-family:var(--font-mono);font-size:.68rem;color:var(--muted)}
   .cap b{color:var(--ink);font-weight:600}
   .cap .full{grid-column:1/-1;color:var(--muted);opacity:.75;letter-spacing:.04em}
@@ -124,7 +124,7 @@
   .ring .rv{font-family:var(--font-mono);font-size:.72rem;color:var(--ink)}
 
   /* ---- stat tiles ---- */
-  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:15px}
+  .tiles{display:none}
   @media (max-width:520px){.tiles{grid-template-columns:repeat(2,1fr)}}
   .tile{background:var(--panel2);border:1px solid var(--line2);border-radius:11px;padding:9px 10px;min-width:0}
   .tile .k{font-family:var(--font-mono);font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
@@ -210,8 +210,12 @@
     <!-- MIDDLE: controller state + telemetry + logs -->
     <section class="col">
       <div class="panel">
-        <p class="plabel">Controller TFT <span class="sp">ST7735 · 160×80</span></p>
-        <div class="tft">
+        <p class="plabel">Controller TFT <span class="sp">ST7735 · 160×80 · live twin</span></p>
+        <div style="text-align:center;padding:4px 0 8px">
+          <canvas id="tftpx" width="160" height="80"
+            style="width:100%;max-width:340px;image-rendering:pixelated;border-radius:6px;background:#000;box-shadow:0 0 0 1px rgba(255,255,255,.08)"></canvas>
+        </div>
+        <div class="tft" style="display:none">
           <div class="row"><span id="tftTitle">PONG</span><span class="lnk" id="tftLink"><i></i>link</span></div>
           <div class="score"><span class="s0" id="tftS0">0</span><span class="cn">:</span><span class="s1" id="tftS1">0</span></div>
           <div class="row"><span class="st" id="tftState">LINK WAIT</span></div>
@@ -294,7 +298,7 @@ const FMT_RGB565 = 0;
 const HOST_MAGIC = 0x54534F48;             // 'H','O','S','T'
 const HOST_VERSION = 1;
 const HOST_SET_VOL = 0x10, HOST_SET_THEME = 0x11, HOST_INJECT_INPUT = 0x12,
-      HOST_SELECT_GAME = 0x13, BOARD_TELEMETRY = 0x20;
+      HOST_SELECT_GAME = 0x13, BOARD_TELEMETRY = 0x20, BOARD_INPUT = 0x21, BOARD_NAV = 0x22;
 
 const GAME_STATES = ["LINK WAIT","READY CHECK","COUNTDOWN","PLAYING","POINT FLASH","GAME OVER"];
 const GAMES = ["Pong","Snake","Flappy","Racing","Eggcatch","Jukebox","Demo"];
@@ -390,6 +394,24 @@ function decodeTelemetry(b){
   applyTelemetry(prev, tel);
 }
 
+// Live knob state from the real board (BOARD_INPUT). knobPos are absolute
+// cumulative detents (int32 LE @8/@12); heldBits @16. Drives the rings when a
+// device is connected; null until the first packet.
+let devInput = null;
+function decodeBoardInput(b){
+  if(b.length !== 17) return;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  devInput = { pos:[dv.getInt32(8,true), dv.getInt32(12,true)], held:b[16] };
+}
+
+let Twin = null;   // the WASM engine module (the real TftDashboard), set on load
+// Live OS nav state (BOARD_NAV, 17 B) -> drive the WASM twin's REAL TftDashboard.
+function decodeNav(b){
+  if(b.length !== 17 || !Twin) return;
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  Twin._twin_apply_nav(b[8], b[9], dv.getInt8(10), b[11], b[12], b[13], b[14], b[15], b[16]);
+}
+
 // splits the COBS byte stream on 0x00, decodes each block, dispatches by magic
 let rxBuf = new Uint8Array(0);
 function rxFeed(chunk){
@@ -412,8 +434,10 @@ function dispatch(b){
   if(magic===FRAME_MAGIC){
     if(type===MSG_FRAME) decodeFrame(b);
     else if(type===MSG_SET_LIGHT_PROFILE) decodeLight(b);
-  } else if(magic===HOST_MAGIC && type===BOARD_TELEMETRY){
-    decodeTelemetry(b);
+  } else if(magic===HOST_MAGIC){
+    if(type===BOARD_TELEMETRY) decodeTelemetry(b);
+    else if(type===BOARD_INPUT) decodeBoardInput(b);
+    else if(type===BOARD_NAV) decodeNav(b);
   }
 }
 
@@ -541,8 +565,9 @@ function renderRing(id, k){
   const th = THEMES[activeTheme];
   const col = k===0 ? th.p1 : th.p2;
   const style = ["trail","arc","pulse"][ [0,2,1,1,0][activeTheme] ] || "trail"; // ring style per theme
-  const pos = hostInput.pos[k];
-  const down = (hostInput.held>>k)&1;
+  const src = devInput || hostInput;   // real board knobs when connected, else keyboard echo
+  const pos = src.pos[k];
+  const down = (src.held>>k)&1;
   const ang = -Math.PI/2 + pos*(Math.PI*2/24);
   c.clearRect(0,0,W,H);
   c.lineCap="round";
@@ -808,13 +833,27 @@ gameSel.addEventListener("change",()=>sendCommand(encodeSelectGame(+gameSel.valu
 // ============================================================================
 // Main loop
 // ============================================================================
+// The WASM twin renders the REAL 160x80 TftDashboard from the streamed nav state.
+const tftpx = document.getElementById("tftpx"), tftpxCtx = tftpx.getContext("2d");
+const tftpxImg = tftpxCtx.createImageData(160, 80);
+function renderTwinTft(now){
+  if(!Twin) return;
+  Twin._twin_render(now|0);
+  const ptr = Twin._twin_tft_buffer(); if(!ptr) return;
+  const px = Twin.HEAPU16.subarray(ptr>>1, (ptr>>1) + 160*80), d = tftpxImg.data;
+  for(let i=0;i<160*80;i++){ const v=px[i], r=(v>>11)&31, g=(v>>5)&63, b=v&31;
+    d[i*4]=(r<<3)|(r>>2); d[i*4+1]=(g<<2)|(g>>4); d[i*4+2]=(b<<3)|(b>>2); d[i*4+3]=255; }
+  tftpxCtx.putImageData(tftpxImg, 0, 0);
+}
+
 let measuredFps=50, fpsFrames=0, fpsLast=performance.now(), capLast=performance.now(), pktLast=0, frLast=0, lastRaf=performance.now();
 function loop(now){
   const dt=Math.min(60, now-lastRaf); lastRaf=now;
   pumpInput(dt);
   renderMirror();
+  renderTwinTft(now);
   renderRing("ring0",0); renderRing("ring1",1);
-  $("rv0").textContent=hostInput.pos[0]; $("rv1").textContent=hostInput.pos[1];
+  { const s=devInput||hostInput; $("rv0").textContent=s.pos[0]; $("rv1").textContent=s.pos[1]; }
   fpsFrames++;
   if(now-fpsLast>=500){ measuredFps=fpsFrames*1000/(now-fpsLast); fpsFrames=0; fpsLast=now; }
   if(now-capLast>=500){
@@ -841,6 +880,11 @@ function init(){
   log("sy","protocol: FRAME_MAGIC=CFRM  HOST_MAGIC=HOST  COBS-framed");
   setMock(true);
   sendLightForTheme(0);
+  // Load the WASM twin engine (the real TftDashboard) + wire it to the nav stream.
+  const s=document.createElement("script"); s.src="dashboard.js";
+  s.onload=()=>{ TwinModule().then(m=>{ Twin=m; m._twin_create(0); log("sy","twin engine ready (WASM · real TftDashboard)"); }).catch(e=>log("er","twin: "+e.message)); };
+  s.onerror=()=>log("er","dashboard.js missing — run web/build.sh");
+  document.head.appendChild(s);
   requestAnimationFrame(loop);
 }
 init();
