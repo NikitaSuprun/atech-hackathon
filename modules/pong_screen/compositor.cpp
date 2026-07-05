@@ -20,6 +20,7 @@ void Compositor::begin() {
             }
             int x = cfg.tileCol * TILE_DIM + rc;
             int y = cfg.tileRow * TILE_DIM + rr;
+            if (FLIP_Y) y = (pong::H - 1) - y;  // line-B panels chain bottom-up
             lut_[t][i] = (uint16_t)((y * pong::W + x) * 3);
         }
         valid_[t] = false;
