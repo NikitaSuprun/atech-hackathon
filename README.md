@@ -49,6 +49,16 @@ on the firmware and a desktop simulator.
   NeoPixel tiles** = one **6×18, 108-pixel** RGB matrix. It knows nothing about games: it
   decodes pixel frames off the link, eases them through a glow engine, and lights LEDs.
 
+<p align="center">
+  <img src="assets/system-diagram.png" width="100%"
+       alt="Full-system hardware diagram: screen board with 12 Light Grid tiles (six upright, six rotated 180°), a laptop USB serial bridge, and the console board with two knobs, speaker and scoreboard">
+  <br><sub><b>Everything clicks into ports — no soldering.</b> The screen board's left column
+  of tiles (ports 1–6) is mounted 180°, the right column (ports 7,9,10,11,13,14) upright; that
+  half-flip is what makes twelve 3×3 tiles read as one continuous 6×18 screen. The laptop in
+  the middle is the USB serial bridge between the two boards. Full pin map in
+  <a href="docs/HARDWARE.md">docs/HARDWARE.md</a>; component renders by
+  <a href="https://atech.dev">atech.dev</a>.</sub></p>
+
 ## The game menu
 
 Ten games register in the on-device menu, in this order (the OS adds a trailing

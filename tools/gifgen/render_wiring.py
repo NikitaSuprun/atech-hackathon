@@ -1,4 +1,4 @@
-"""Render the PONG full-system hardware diagram (assets/system-diagram.png)."""
+"""Render the Atech Arcade full-system hardware diagram (assets/system-diagram.png)."""
 
 from __future__ import annotations
 
@@ -787,7 +787,7 @@ def draw_footer(
 
 
 def draw_title(d_over: ImageDraw.ImageDraw) -> None:
-    a = "PONG"
+    a = "Atech Arcade"
     b = "  ·  full-system hardware"
     wa = F(24, True).getlength(a) / SS
     wb = F(19).getlength(b) / SS
