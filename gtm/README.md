@@ -2,7 +2,7 @@
 
 **A retro game console and an ambient pixel display — in one thing that clicks together from Atech modules. No soldering.**
 
-*Codename "Atech Arcade" — final name TBD. Powered by Atech.*
+*Powered by Atech.*
 
 <table>
   <tr>
@@ -24,7 +24,7 @@
 > A **$229 Playdate plays alone. A $199 Tidbyt just sits there.**
 > Atech Arcade is **$249 and does both** — it's a console you play *and* an ambient pixel display that lives on your shelf when you're not playing.
 
-When someone's playing, it's Pong, Snake, Tetris, Flappy, egg-catch, Doodle Jump and a jukebox. When nobody's playing, the 108-pixel matrix becomes a clock, a now-playing visualizer, or a slow-drifting pixel-art scene. One purchase, two reasons to keep it out on the desk.
+When someone's playing, it's Pong, Snake, Invaders, Flappy, egg-catch, Doodle Jump and a jukebox — ten games in all. When nobody's playing, the 108-pixel matrix becomes a clock, a now-playing visualizer, or a slow-drifting pixel-art scene. One purchase, two reasons to keep it out on the desk.
 
 ---
 
@@ -55,7 +55,7 @@ This is how Atech reaches past the maker aisle into **gamers, gift, and classroo
 ## Three value props
 
 1. **Two devices, one price.** A console *and* an ambient display. Every competitor is only one of those — Playdate never lights up your room, Tidbyt never lets you play.
-2. **Tactile, multiplayer, screen-free play.** Two chunky knobs with LED rings, a real speaker, escalating rallies — couch-competitive fun that a phone can't touch. Working 2-player Pong today; more titles in the OS.
+2. **Tactile, multiplayer, screen-free play.** Two chunky knobs with LED rings, a real speaker, escalating rallies — couch-competitive fun that a phone can't touch. All ten games run on real hardware today.
 3. **It's Atech, all the way down.** Built from stock modules with zero solder. Every unit sold moves **five Atech module types** — and a growing game library keeps earning after the sale.
 
 ---
@@ -80,7 +80,7 @@ We're showing a **working prototype and credible economics — not a finished re
 
 | ✅ Real today | 🛣️ Roadmap (not at demo) |
 |---|---|
-| Two-player Pong on the 108-px matrix, on hardware | The rest of the game library shipping in the OS |
+| The full OS + all ten games on the 108-px matrix, on hardware | **More + downloadable** titles (first-party & community) |
 | Console board: knobs, LED rings, color scoreboard, speaker | The in-console **game market** (browse + install) |
 | One engine, dependency-free C++, also runs in a desktop sim | **WiFi** board-to-board and phone-as-controller |
 | ~10-minute tile calibration + loss-proof link protocol | **Arcade Max** bigger-matrix hardware |

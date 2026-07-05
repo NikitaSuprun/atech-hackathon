@@ -1,6 +1,6 @@
 # Roadmap
 
-> **Everything on this page is next, not shipping at the demo.** What ships live at 18:00 is working two-player Pong on the real 108-pixel matrix, the console board (knobs, rings, color scoreboard, speaker), and a board-to-board link running over a **laptop USB bridge**. The two big post-hackathon bets below — **the game market** and **native WiFi** — are designed, partially in-tree, and deliberately *not* switched on for the demo.
+> **Everything on this page is next, not shipping at the demo.** What ships live at 18:00 is the **full OS with all ten games** on the real 108-pixel matrix, the console board (knobs, rings, color scoreboard, speaker), and a board-to-board link running over a **laptop USB bridge**. The two big post-hackathon bets below — **the game market** and **native WiFi** — are designed, partially in-tree, and deliberately *not* switched on for the demo.
 
 ---
 

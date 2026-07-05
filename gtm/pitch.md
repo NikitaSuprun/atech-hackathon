@@ -5,11 +5,11 @@
 > A **$229 Playdate plays alone.** A **$199 Tidbyt just sits there.**
 > **This is $249 and does both** — a console you play *and* an ambient pixel display that earns its shelf space when you're not playing.
 >
-> It's two Atech boards that click together from stock modules, no soldering: a brain with a color scoreboard, a speaker and two knobs with LED rings, driving a 108-pixel light matrix that plays Pong, Snake, Tetris and a dozen more — then melts into a clock or a pixel-art scene when the game's over.
+> It's two Atech boards that click together from stock modules, no soldering: a brain with a color scoreboard, a speaker and two knobs with LED rings, driving a 108-pixel light matrix that plays Pong, Snake, Invaders and seven more — then melts into a clock or a pixel-art scene when the game's over.
 >
 > Here's the part that matters to *you*: **every single unit sold moves a Motherboard, a Knob, a Speaker, a Screen — and twelve Light Grids.** Five module types in one purchase. It pulls your hardest-to-attach SKU through the door twelve at a time, opens up gamers, gift and classroom aisles you don't sell to today, and stacks a recurring game-pass business on top of the hardware.
 >
-> We've got working two-player Pong on real hardware and a margin model in your own numbers. **This is your flagship build-it-yourself console. Powered by Atech.**
+> We've got the full OS and all ten games running on real hardware and a margin model in your own numbers. **This is your flagship build-it-yourself console. Powered by Atech.**
 
 ---
 
@@ -22,7 +22,7 @@
    The Duo attaches **5 Atech module types and 12 Light Grids** in a single sale, and the **Arcade Pass / game packs** keep earning after the box ships. Hardware margin *and* recurring revenue, on a stack Atech owns end to end.
 
 3. **Credible today, not vaporware.**
-   Working two-player Pong on the real 108-px matrix, a loss-proof link protocol, ~10-minute tile calibration, and one dependency-free engine that also runs in a desktop simulator. We show a **working prototype and honest unit economics** — the WiFi link and game market are clearly labeled roadmap.
+   The full OS and all ten games on the real 108-px matrix, a loss-proof link protocol, ~10-minute tile calibration, and one dependency-free engine that also runs in a desktop simulator. We show a **working prototype and honest unit economics** — the WiFi link and game market are clearly labeled roadmap.
 
 ---
 
@@ -48,4 +48,4 @@ The brief is *build for the market*. **The judges are the market.** Most teams w
 
 ### Honesty line (say it out loud)
 
-Working 2-player Pong exists **today**. The board-to-board link is **currently a laptop USB bridge** (native WiFi is written and in-tree, not switched on for the noisy demo room). The **game market and WiFi are roadmap.** We're showing a working prototype and credible economics — not a finished retail unit. That's the honest version, and it's still a business.
+The full OS and all ten games run on the real hardware **today**. The board-to-board link is **currently a laptop USB bridge** (native WiFi is written and in-tree, not switched on for the noisy demo room). The **game market and WiFi are roadmap.** We're showing a working prototype and credible economics — not a finished retail unit. That's the honest version, and it's still a business.
