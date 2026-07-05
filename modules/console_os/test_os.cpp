@@ -86,7 +86,7 @@ int main() {
     check(os.mode() == Mode::Menu, "boots into the menu");
     check(reg.count() >= 1, "registry lists >=1 game");
     check(reg.indexOf("demo") >= 0, "the demo game is enumerated");
-    check(fabsf(audio.lastVol - 180.0f / 255.0f) < 0.01f, "begin applied master volume");
+    check(fabsf(audio.lastVol - Settings{}.volume / 255.0f) < 0.01f, "begin applied master volume");
     check(sink.lights >= 1, "begin emitted an initial LightProfile");
 
     // render one menu frame under the boot theme (index 0), keep it for later

@@ -11,7 +11,7 @@ namespace console_os {
 
 struct Settings {
     uint8_t themeIndex = 0;
-    uint8_t volume     = 180;  // 0..255 -> Audio::setVolume(v / 255.0f)
+    uint8_t volume     = 40;   // 0..255 -> Audio::setVolume(v / 255.0f); quiet by default
     uint8_t brightness = 255;  // 0..255 -> scales theme wallBrightness ceiling
 };
 
