@@ -21,10 +21,12 @@ public:
         size_t n = console::cobsEncode((const uint8_t*)buf, len, enc, sizeof(enc));
         if (n == 0) return false;
         enc[n++] = 0;  // frame delimiter
-        // Serial runs non-blocking (setTxTimeoutMs(0)); only send if the framed
-        // packet fits the TX buffer whole — a partial write would tear the COBS
-        // framing. Dropping the frame instead self-heals via the screen heartbeat.
-        if (Serial.availableForWrite() < (int)n) return false;
+        // Non-blocking write (setTxTimeoutMs(0)): if the USB-CDC buffer is full it
+        // writes what fits and drops the tail — a rare torn frame the screen's
+        // CobsReader resyncs on and the heartbeat repaints. We deliberately do NOT
+        // gate on availableForWrite(): on ESP32-S3 USB-CDC it can sit below a full
+        // frame's length and never recover, which silently WEDGES the whole stream
+        // (far worse than an occasional glitch). Liveness beats per-frame atomicity.
         Serial.write(enc, n);
         return true;
     }
