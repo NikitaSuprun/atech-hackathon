@@ -17,11 +17,15 @@
 
 namespace console_os {
 
-enum class OverlayAction : uint8_t { None, Resume, Exit };
+enum class OverlayAction : uint8_t { None, Resume, Restart, Next, Exit };
+
+// Options in wheel order: RESUME, RESTART (re-init this game), NEXT (jump to the
+// next title without a menu round-trip), EXIT (back to the launcher).
+constexpr int kOverlayOpts = 4;
 
 struct OverlayState {
     bool     open  = false;
-    int      sel   = 0;      // 0 = RESUME, 1 = EXIT
+    int      sel   = 0;      // 0=RESUME 1=RESTART 2=NEXT 3=EXIT
     bool     armed = false;  // both buttons released since open?
     uint32_t tMs   = 0;
 
@@ -41,10 +45,16 @@ inline OverlayAction overlayUpdate(OverlayState& o, const console::Input& in,
     if (!o.armed && !in.knob[0].down && !in.knob[1].down) o.armed = true;
 
     int d = sdk::signi(int(in.knob[0].delta));
-    if (d != 0) o.sel = sdk::clampi(o.sel + d, 0, 1);
+    if (d != 0) o.sel = sdk::clampi(o.sel + d, 0, kOverlayOpts - 1);
 
-    if (o.armed && in.knob[0].justPressed)
-        return o.sel == 0 ? OverlayAction::Resume : OverlayAction::Exit;
+    if (o.armed && in.knob[0].justPressed) {
+        switch (o.sel) {
+            case 0:  return OverlayAction::Resume;
+            case 1:  return OverlayAction::Restart;
+            case 2:  return OverlayAction::Next;
+            default: return OverlayAction::Exit;
+        }
+    }
     return OverlayAction::None;
 }
 
@@ -68,13 +78,13 @@ inline void overlayDraw(const OverlayState& o, console::Canvas& c,
     c.vline(2, y0 + 2, 3, t.c(ROLE_ACCENT2));
     c.vline(3, y0 + 2, 3, t.c(ROLE_ACCENT2));
 
-    // Current choice marquee.
-    const char* opt = o.sel == 0 ? "RESUME" : "EXIT";
+    // Current choice marquee (one option shown at a time; scrolls if too wide).
+    static const char* const kOpts[kOverlayOpts] = {"RESUME", "RESTART", "NEXT", "EXIT"};
     uint8_t tglow = gfx::breathe(o.tMs, t.motion.blinkMs, 160, 255);
-    gfx::label(c, 9, opt, gfx::dim(t.c(ROLE_INK), tglow), o.tMs);
+    gfx::label(c, 9, kOpts[o.sel], gfx::dim(t.c(ROLE_INK), tglow), o.tMs);
 
-    // Two option pips at the panel foot.
-    gfx::pipsH(c, 2, y1 - 1, 2, o.sel, t.c(ROLE_ACCENT), t.c(ROLE_DIM), 2);
+    // Four option pips at the panel foot (columns 1..4).
+    gfx::pipsH(c, 1, y1 - 1, kOverlayOpts, o.sel, t.c(ROLE_ACCENT), t.c(ROLE_DIM), 1);
 }
 
 }  // namespace console_os

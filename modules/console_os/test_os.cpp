@@ -120,13 +120,53 @@ int main() {
     check(os.mode() == Mode::Game, "overlay floats over the game (still Game mode)");
     check(os.activeGame() == g, "game is NOT torn down under the overlay");
 
-    // ---- exit-to-menu from the overlay ----
-    printf("overlay -> exit to menu\n");
+    // ---- RESTART: same title, fresh instance, overlay closed ----
+    printf("overlay -> restart\n");
     g_s.setButton(0, false);
     g_s.setButton(1, false);
     step(os);  // release both -> overlay arms
     g_s.rotate(0, +1);
-    step(os);  // scroll to EXIT
+    step(os);  // RESUME -> RESTART (one step per tick)
+    g_s.setButton(0, true);
+    step(os);  // select RESTART
+    check(os.mode() == Mode::Game && !os.overlayOpen(), "RESTART relaunches into the game");
+    check(os.activeGame() && strcmp(os.activeGame()->meta().name, firstGame) == 0,
+          "RESTART keeps the same title");
+    g_s.setButton(0, false);
+    step(os);
+
+    // ---- NEXT: jump to the following title without a menu round-trip ----
+    printf("overlay -> next game\n");
+    g_s.setButton(0, true);
+    g_s.setButton(1, true);
+    step(os);  // chord -> overlay
+    g_s.setButton(0, false);
+    g_s.setButton(1, false);
+    step(os);  // arm
+    for (int k = 0; k < 2; ++k) {
+        g_s.rotate(0, +1);
+        step(os);  // -> NEXT (sel 2)
+    }
+    g_s.setButton(0, true);
+    step(os);  // select NEXT
+    check(os.mode() == Mode::Game && !os.overlayOpen(), "NEXT relaunches into a game");
+    check(os.activeGame() && strcmp(os.activeGame()->meta().name, reg.at(1).name) == 0,
+          "NEXT jumps to the 2nd title");
+    g_s.setButton(0, false);
+    step(os);
+
+    // ---- exit-to-menu from the overlay ----
+    printf("overlay -> exit to menu\n");
+    g_s.setButton(0, true);
+    g_s.setButton(1, true);
+    step(os);  // chord -> overlay
+    g_s.setButton(0, false);
+    g_s.setButton(1, false);
+    step(os);  // arm
+    for (int k = 0; k < 3; ++k) {
+        g_s.rotate(0, +1);
+        step(os);  // scroll RESUME -> RESTART -> NEXT -> EXIT
+    }
     g_s.setButton(0, true);
     step(os);  // select EXIT
     check(os.mode() == Mode::Menu, "EXIT returns to the menu");

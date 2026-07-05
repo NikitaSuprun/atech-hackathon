@@ -86,8 +86,18 @@ void BrainOS::updateActive(const Input& in, uint32_t dtMs) {
             if (!game_) { exitToMenu(); break; }
             if (ov_.open) {
                 OverlayAction a = overlayUpdate(ov_, in, dtMs);
-                if (a == OverlayAction::Resume) closeOverlay();
-                else if (a == OverlayAction::Exit) exitToMenu();
+                if (a == OverlayAction::Resume) {
+                    closeOverlay();
+                } else if (a == OverlayAction::Restart) {
+                    if (game_) game_->teardown();
+                    launch(gameIdx_);  // same title, fresh init()
+                } else if (a == OverlayAction::Next) {
+                    int next = (gameIdx_ + 1) % reg_.count();
+                    if (game_) game_->teardown();
+                    launch(next);
+                } else if (a == OverlayAction::Exit) {
+                    exitToMenu();
+                }
             } else if (overlayChord(in)) {
                 openOverlay();  // swallow this tick's input from the game
             } else {
