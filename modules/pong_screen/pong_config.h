@@ -70,10 +70,11 @@ constexpr int TILE_DIM      = 3;                   // 3x3 LEDs per physical tile
 constexpr int LEDS_PER_TILE = TILE_DIM * TILE_DIM; // 9 chips per tile
 constexpr int TILE_BYTES    = LEDS_PER_TILE * (int)sizeof(pong::Color);  // 27 = packed RGB per tile
 constexpr uint8_t WALL_BRIGHTNESS = 40;           // 0..51 (driver clamps at 51)
-// Panel mount orientation: the SK6812/line-B tiles chain bottom-up vs the top-down
-// line-A calibration TILE_MAP encodes, so flip the whole frame vertically (logical
-// y=0 -> physical top row). Hardware-day toggle; set false for line-A panels.
-constexpr bool FLIP_Y = true;
+// Panel mount orientation (hardware-day toggles): mirror the frame to match how this
+// wall is physically mounted vs the TILE_MAP calibration. This mount reads left-right
+// flipped, upright -> FLIP_X on, FLIP_Y off.
+constexpr bool FLIP_X = true;   // horizontal mirror (logical x=0 -> physical left)
+constexpr bool FLIP_Y = false;  // vertical flip   (logical y=0 -> physical top)
 constexpr float HEARTBEAT_REPAINT_S = 2.0f;       // periodic full repaint heals WS2812 glitches
 
 struct TileCfg {

@@ -20,6 +20,7 @@ void Compositor::begin() {
             }
             int x = cfg.tileCol * TILE_DIM + rc;
             int y = cfg.tileRow * TILE_DIM + rr;
+            if (FLIP_X) x = (pong::W - 1) - x;  // horizontal mirror: wall mounted L-R flipped
             if (FLIP_Y) y = (pong::H - 1) - y;  // line-B panels chain bottom-up
             lut_[t][i] = (uint16_t)((y * pong::W + x) * 3);
         }
