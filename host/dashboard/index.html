@@ -182,9 +182,9 @@
       <h1>Console <b>Dashboard</b></h1>
     </div>
     <div class="status off" id="status"><span class="dot"></span><span id="statusText">idle</span></div>
-    <button class="btn on" id="btnMock">Mock: ON</button>
-    <button class="btn primary" id="btnConnect">Connect device</button>
-    <button class="btn" id="btnDisconnect" disabled>Disconnect</button>
+    <button class="btn on" id="btnMock" hidden>Mock: ON</button>
+    <button class="btn primary" id="btnConnect" hidden>Connect device</button>
+    <button class="btn" id="btnDisconnect" disabled hidden>Disconnect</button>
   </header>
 
   <div class="warn" id="warn"></div>
@@ -869,11 +869,9 @@ function loop(now){
 // Init
 // ============================================================================
 function init(){
-  if(!("serial" in navigator)){
-    $("btnConnect").disabled=true;
-    const w=$("warn"); w.style.display="block";
-    w.textContent="Web Serial unavailable in this browser — open in Chrome or Edge (desktop) to connect real hardware. Mock mode runs everywhere.";
-  }
+  // Web Serial is only the legacy file:// connect path; deploy mode streams over SSE
+  // in any browser (Safari included), so the "unavailable" warning is obsolete.
+  if(!("serial" in navigator)) $("btnConnect").disabled=true;
   applyThemeChrome(0);
   volEl.style.setProperty("--fill","60%");
   log("sy","dashboard ready · mock mode");
@@ -885,6 +883,14 @@ function init(){
   s.onload=()=>{ TwinModule().then(m=>{ Twin=m; m._twin_create(0); log("sy","twin engine ready (WASM · real TftDashboard)"); }).catch(e=>log("er","twin: "+e.message)); };
   s.onerror=()=>log("er","dashboard.js missing — run web/build.sh");
   document.head.appendChild(s);
+  // Deploy mode: when served over HTTP (tools/twin_server.py), stream the brain
+  // over SSE — works from any device on the LAN, alongside the live physical wall.
+  if(location.protocol.startsWith("http")){
+    const es=new EventSource("/stream");
+    es.onopen=()=>{ setMock(false); $("status").className="status live"; $("statusText").textContent="live · network"; log("sy","live network stream connected (SSE · "+location.host+")"); };
+    es.onmessage=(e)=>{ const raw=atob(e.data), u=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) u[i]=raw.charCodeAt(i); rxFeed(u); };
+    es.onerror=()=>{};
+  }
   requestAnimationFrame(loop);
 }
 init();
