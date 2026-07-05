@@ -1,7 +1,11 @@
 id: console_os
 name: "Brain OS — on-device shell"
-category: system
-interface: none
+# Pure logic module (the brain's shell + game lifecycle); it is composed into the
+# brain firmware by the hand-authored PlatformIO project (firmware/brain), not
+# placed on a port by atech codegen. category/interface are the nearest valid
+# schema values so `atech` can still parse the catalog (it is not a hardware sink).
+category: connectivity
+interface: gpio
 size: 1
 description: |
   The console's operating shell. Owns the fixed-rate loop (console::TICK_HZ):
