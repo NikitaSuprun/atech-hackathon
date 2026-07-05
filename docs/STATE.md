@@ -10,7 +10,9 @@ The platform is **host/sim-verified end to end AND running on hardware**: 10 gam
 on-device OS, a dumb glowing screen renderer, the brain→wire→screen frame path, and 5 runtime
 themes — all building + passing tests off-hardware, and **both ESP32-S3 boards are flashed
 with the console firmware**. The brain is hardware-verified streaming ~59 fps of valid RGB565
-frames; the screen board is flashed and fed those frames over a USB bridge. CI (`tools/ci.sh`)
+frames; the screen board is flashed and fed those frames over a USB bridge, and the **physical
+wall panels are lit** (SK6812 / line-B). A **passive browser twin** (`tools/twin_server.py` +
+the real `TftDashboard` in WASM) mirrors the live console over the LAN. CI (`tools/ci.sh`)
 runs the whole host suite + a GitHub workflow.
 
 ## What's verified (green off-hardware)
@@ -46,10 +48,11 @@ Every one of these was run and passes:
 | ✅ Real / verified now | 🛣️ Roadmap (not yet) |
 |---|---|
 | Whole platform builds + passes tests on the desktop (host/sim/E2E) | Wired-UART board-to-board link + **ESP-NOW** failover (stub in-tree) — removes the USB bridge |
-| **Both boards flashed** with the console firmware (`firmware/brain`, `firmware/screen`) | Palette wire-codec, telemetry/passive twin, render pipeline (RMT5/dual-core) |
+| **Both boards flashed** with the console firmware (`firmware/brain`, `firmware/screen`); **physical wall confirmed lit** on the SK6812/line-B panels (mount corrected via `FLIP_Y`) | Palette wire-codec, render pipeline (RMT5/dual-core) |
 | Brain hardware-verified emitting ~59 fps of valid RGB565 frames on serial | Slim firmware (`-Os`/LTO/`--gc-sections`) via a post-generate override |
-| Unified `tools/ci.sh` + GitHub CI workflow running all selftests + module/e2e tests + eval | The in-console **game market** (signed OTA → sandboxed cartridges) — see `gtm/roadmap.md` |
-| Board-to-board runs through the laptop `tools/console_bridge.py` USB relay (bring-up) | Eyeball/photo confirmation of the physical LED output (no camera this session) |
+| **Passive browser twin** shipped — `tools/twin_server.py` streams live brain state over SSE; the real `TftDashboard` runs in WASM (`web/`) | The in-console **game market** (signed OTA → sandboxed cartridges) — see `gtm/roadmap.md` |
+| Unified `tools/ci.sh` + GitHub CI workflow running all selftests + module/e2e tests + eval | |
+| Board-to-board runs through the laptop `tools/console_bridge.py` USB relay (bring-up) | |
 
 ## Firmware & hardware
 
