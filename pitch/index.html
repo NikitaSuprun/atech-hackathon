@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atech Arcade — the flagship that sells the kit</title>
+<style>
+  :root{
+    --bg:#08070f; --bg2:#0e0c1a; --panel:#141020; --edge:#2a2340;
+    --ink:#efecfa; --dim:#a49dc2; --faint:#6d6690;
+    --pink:#ff2e97; --pinklite:#ff86c4; --amber:#ffb24d; --cyan:#5fe3ff; --green:#57e39b;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 700px at 78% -10%, #1b1330 0%, rgba(27,19,48,0) 60%),
+      radial-gradient(900px 600px at 8% 108%, #17182f 0%, rgba(23,24,47,0) 55%),
+      var(--bg);
+    color:var(--ink);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  code,.mono{font-family:"SF Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
+
+  /* ---- deck / slide ---- */
+  .deck{height:100vh;width:100vw}
+  .slide{
+    position:absolute;inset:0;display:none;
+    padding:clamp(28px,5vw,80px);
+    flex-direction:column;justify-content:center;
+    max-width:var(--maxw);margin:0 auto;left:0;right:0;
+  }
+  .slide.on{display:flex;animation:in .5s cubic-bezier(.2,.7,.2,1)}
+  @keyframes in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  .kicker{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--pinklite);
+    font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+  .kicker::before{content:"";width:26px;height:2px;background:linear-gradient(90deg,var(--pink),transparent);border-radius:2px}
+  h1{font-size:clamp(40px,7.2vw,92px);line-height:1.02;letter-spacing:-.02em;font-weight:800}
+  h2{font-size:clamp(28px,4.4vw,52px);line-height:1.08;letter-spacing:-.02em;font-weight:800;margin-bottom:8px}
+  h3{font-size:clamp(19px,2.3vw,26px);font-weight:700;letter-spacing:-.01em}
+  p.lead{font-size:clamp(18px,2.3vw,25px);color:var(--dim);max-width:46ch;margin-top:10px}
+  .glow{text-shadow:0 0 22px rgba(255,46,151,.55),0 0 46px rgba(255,46,151,.28)}
+  .amberGlow{color:var(--amber);text-shadow:0 0 20px rgba(255,178,77,.5)}
+  strong{color:var(--ink)}
+  .hl{color:var(--pinklite);font-weight:700}
+  .hlA{color:var(--amber);font-weight:700}
+  .hlC{color:var(--cyan);font-weight:700}
+
+  /* ---- bits ---- */
+  .grid{display:grid;gap:16px;margin-top:26px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .card{background:linear-gradient(180deg,var(--panel),#0f0c1b);border:1px solid var(--edge);
+    border-radius:16px;padding:20px 22px;position:relative;overflow:hidden}
+  .card h3{margin-bottom:6px}
+  .card p{color:var(--dim);font-size:15.5px}
+  .card .n{font:700 13px/1 var(--mono);color:var(--pink);letter-spacing:.1em}
+  .tag{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--faint);border:1px solid var(--edge);border-radius:999px;padding:4px 11px;margin:0 6px 6px 0}
+  ul.clean{list-style:none;margin-top:20px;display:grid;gap:13px;max-width:60ch}
+  ul.clean li{padding-left:26px;position:relative;color:var(--dim);font-size:17px}
+  ul.clean li::before{content:"";position:absolute;left:0;top:9px;width:10px;height:10px;border-radius:50%;
+    background:var(--pink);box-shadow:0 0 10px var(--pink)}
+  ul.clean li b{color:var(--ink)}
+  .big{font-size:clamp(30px,5vw,62px);font-weight:800;line-height:1.05;letter-spacing:-.02em}
+
+  table.cmp{width:100%;border-collapse:collapse;margin-top:22px;font-size:15px}
+  table.cmp th,table.cmp td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--edge)}
+  table.cmp th{color:var(--faint);font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+  table.cmp td.price{font-weight:700;color:var(--ink);text-align:right;white-space:nowrap}
+  table.cmp tr.us td{color:var(--ink)}
+  table.cmp tr.us{background:linear-gradient(90deg,rgba(255,46,151,.14),rgba(255,46,151,0));}
+  table.cmp tr.us td:first-child{color:var(--pinklite);font-weight:800}
+
+  .ladder{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+  .sku{flex:1;min-width:120px;background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:16px}
+  .sku.hero{border-color:var(--pink);box-shadow:0 0 0 1px var(--pink),0 14px 44px rgba(255,46,151,.22)}
+  .sku .name{font-size:13px;color:var(--dim);letter-spacing:.04em}
+  .sku .price{font-size:26px;font-weight:800;margin-top:6px}
+  .sku.hero .price{color:var(--pinklite)}
+  .sku .sub{font-size:12px;color:var(--faint);margin-top:4px}
+
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+  .real,.road{border-radius:16px;padding:20px 22px;border:1px solid var(--edge)}
+  .real{background:linear-gradient(180deg,rgba(87,227,155,.09),rgba(87,227,155,.02))}
+  .road{background:linear-gradient(180deg,rgba(95,227,255,.08),rgba(95,227,255,.02))}
+  .real h3{color:var(--green)} .road h3{color:var(--cyan)}
+  .real ul,.road ul{list-style:none;margin-top:12px;display:grid;gap:9px}
+  .real li,.road li{font-size:15px;color:var(--dim);padding-left:22px;position:relative}
+  .real li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:800}
+  .road li::before{content:"→";position:absolute;left:0;color:var(--cyan);font-weight:800}
+
+  /* ---- glowing 6x18 matrix mock ---- */
+  .matrix{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;width:132px;padding:14px;
+    background:radial-gradient(120% 90% at 50% 30%,#171128,#0a0813);border:1px solid var(--edge);border-radius:14px}
+  .px{width:12px;height:12px;border-radius:50%;background:#171226}
+  .px.on{background:radial-gradient(circle at 40% 35%,#fff, var(--c,#ffb24d) 55%, rgba(0,0,0,0) 72%);
+    box-shadow:0 0 8px var(--c,#ffb24d),0 0 16px var(--c,#ffb24d)}
+  .stage{display:flex;align-items:center;gap:30px;margin-top:26px;flex-wrap:wrap}
+
+  /* ---- title ---- */
+  .brandmark{filter:drop-shadow(0 0 26px rgba(255,46,151,.5))}
+  .powered{margin-top:30px;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+  .powered b{color:var(--pinklite)}
+
+  /* ---- hud / nav ---- */
+  .hud{position:fixed;left:0;right:0;bottom:18px;display:flex;justify-content:center;align-items:center;
+    gap:14px;z-index:10;pointer-events:none}
+  .dots{display:flex;gap:8px;pointer-events:auto}
+  .dots i{width:8px;height:8px;border-radius:50%;background:var(--edge);cursor:pointer;transition:.2s}
+  .dots i.on{background:var(--pink);box-shadow:0 0 10px var(--pink);transform:scale(1.25)}
+  .count{position:fixed;top:22px;right:26px;font:600 13px/1 var(--mono);color:var(--faint);letter-spacing:.1em}
+  .corner{position:fixed;top:18px;left:24px;display:flex;align-items:center;gap:9px;color:var(--faint);
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+  .corner svg{width:22px;height:22px}
+  .hint{position:fixed;bottom:16px;right:22px;font-size:12px;color:var(--faint);z-index:10}
+
+  @media (max-width:720px){ .g2,.g3,.cols{grid-template-columns:1fr} .stage{gap:18px} }
+
+  /* ---- print to PDF: every slide its own page, keep the glow ---- */
+  @media print{
+    @page{size:1280px 720px;margin:0}
+    html,body{overflow:visible;height:auto}
+    body{background:var(--bg);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .hud,.count,.hint{display:none!important}
+    .deck{height:auto}
+    .slide{position:relative;display:flex!important;inset:auto;height:720px;width:1280px;
+      max-width:none;margin:0;page-break-after:always;break-after:page;animation:none}
+    .corner{position:absolute}
+  }
+</style>
+</head>
+<body>
+<div class="corner">
+  <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="26" r="11" fill="#ff2e97"/><rect x="29" y="26" width="6" height="22" rx="3" fill="#7a74a0"/><ellipse cx="32" cy="50" rx="13" ry="4.5" fill="#221c38"/></svg>
+  Atech Arcade
+</div>
+<div class="count"><span id="cur">01</span> / 09</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · TITLE -->
+  <section class="slide">
+    <svg class="brandmark" width="112" height="112" viewBox="0 0 64 64" aria-label="Atech Arcade">
+      <defs>
+        <radialGradient id="tile" cx="50%" cy="36%" r="78%"><stop offset="0%" stop-color="#1a1327"/><stop offset="100%" stop-color="#090812"/></radialGradient>
+        <radialGradient id="ball" cx="38%" cy="32%" r="72%"><stop offset="0%" stop-color="#fff6fb"/><stop offset="32%" stop-color="#ff69b9"/><stop offset="72%" stop-color="#ff2e97"/><stop offset="100%" stop-color="#a50f61"/></radialGradient>
+        <linearGradient id="shaft" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#241f38"/><stop offset="48%" stop-color="#7a74a0"/><stop offset="100%" stop-color="#241f38"/></linearGradient>
+        <radialGradient id="base" cx="50%" cy="36%" r="62%"><stop offset="0%" stop-color="#2a2440"/><stop offset="100%" stop-color="#120e1e"/></radialGradient>
+        <filter id="glow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="3.1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <rect x="1.5" y="1.5" width="61" height="61" rx="15" fill="url(#tile)" stroke="#2c2447" stroke-width="1.2"/>
+      <ellipse cx="32" cy="49.5" rx="15.5" ry="5.6" fill="url(#base)" stroke="#3a3358" stroke-width="0.8"/>
+      <ellipse cx="32" cy="48" rx="9" ry="3" fill="#0c0a15"/>
+      <rect x="28.4" y="23" width="7.2" height="25" rx="3.6" fill="url(#shaft)"/>
+      <g filter="url(#glow)"><circle cx="32" cy="21" r="12" fill="url(#ball)"/></g>
+      <ellipse cx="27.8" cy="16.2" rx="4.1" ry="2.6" fill="#ffffff" opacity="0.55"/>
+    </svg>
+    <h1 style="margin-top:26px">Atech <span class="glow">Arcade</span></h1>
+    <p class="lead" style="max-width:34ch;font-size:clamp(20px,2.6vw,28px);margin-top:18px">
+      A retro game <b style="color:var(--ink)">console</b> — and an ambient pixel display.
+      One thing that clicks together from Atech modules. <b style="color:var(--ink)">No solder.</b>
+    </p>
+    <div class="powered">The flagship that sells the kit &nbsp;·&nbsp; <b>Powered by Atech</b></div>
+  </section>
+
+  <!-- 2 · OPPORTUNITY -->
+  <section class="slide">
+    <div class="kicker">The opportunity</div>
+    <h2>Atech's kit can build <span class="amberGlow">anything</span>.<br>The hard part is showing people <span class="glow">why they'd care</span>.</h2>
+    <p class="lead">Atech Arcade is the answer: a finished-feeling consumer product that <b style="color:var(--ink)">sells the kit just by existing</b> on the homepage — no new hardware for Atech to design.</p>
+    <div class="grid g3">
+      <div class="card"><div class="n">01</div><h3>Retro is having a moment</h3><p>Playdate sold out run after run; Analogue Pocket; the NES/SNES/Genesis "mini" revival; pixel-art & Gen-Z nostalgia. A real, growing wave to ride.</p></div>
+      <div class="card"><div class="n">02</div><h3>A kit needs a hero</h3><p>"It can build anything" is a hard sell. A console people <em>want</em> makes the abstract tangible in one glance.</p></div>
+      <div class="card"><div class="n">03</div><h3>The judges are the market</h3><p>Build-for-the-Market, judged by Atech. So we built a <b style="color:var(--ink)">product line for the people holding the scorecard</b>.</p></div>
+    </div>
+  </section>
+
+  <!-- 3 · THE PRODUCT -->
+  <section class="slide">
+    <div class="kicker">The product</div>
+    <h2>Two boards click together. <span class="glow">No solder.</span></h2>
+    <div class="stage">
+      <div class="matrix" id="mx" aria-hidden="true"></div>
+      <div style="flex:1;min-width:280px">
+        <ul class="clean" style="margin-top:0">
+          <li><b>The brain</b> — a 14-port Motherboard with a color TFT scoreboard, a speaker, and two click-in rotary knobs, each ringed with 12 LEDs. Runs the OS + every game.</li>
+          <li><b>The screen</b> — twelve "Light Grid" NeoPixel tiles = a <b>6×18, 108-pixel</b> RGB matrix. A dumb, glowing renderer.</li>
+          <li><b>On-device OS</b> boots into <b>10 games</b> + ambient modes. Play: Pong, Snake, egg-catch, Flappy, Invaders, a jukebox… Idle: a clock, a visualizer, a drifting pixel scene.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · PLATFORM -->
+  <section class="slide">
+    <div class="kicker">Platform, not a toy</div>
+    <h2>A full console + <span class="amberGlow">10 games</span>, built in a day.</h2>
+    <div class="grid g2">
+      <div class="card"><h3>One engine, two homes</h3><p>Every game is dependency-free C++ that compiles unchanged into the ESP32 firmware <em>and</em> a desktop simulator — so the whole library is testable off-hardware, deterministically.</p></div>
+      <div class="card"><h3>Themeable to the core</h3><p><span class="hl">5 runtime themes</span> restyle the <em>whole</em> console — menu, every game, the knob rings, the glow itself — from design tokens. Never a hardcoded hex.</p></div>
+      <div class="card"><h3>Clean seams</h3><p>Ports-and-adapters: the brain owns logic and draws to an abstract <code>Canvas</code>; the screen just glows. <b style="color:var(--ink)">Adding a game is one class.</b></p></div>
+      <div class="card"><h3>Room to grow</h3><p><span class="hlC">Roadmap:</span> an installable game "market" (browse + install) and code-your-own cartridges — the razor's blade.</p></div>
+    </div>
+  </section>
+
+  <!-- 5 · MARKET -->
+  <section class="slide">
+    <div class="kicker">The market</div>
+    <p class="big">A <span class="hl">$229 Playdate</span> plays alone.<br>A <span class="hlC">$199 Tidbyt</span> just sits there.<br>Atech Arcade is <span class="glow">$249 — and does both.</span></p>
+    <table class="cmp">
+      <tr><th>Product</th><th>Category</th><th>The catch</th><th style="text-align:right">Price</th></tr>
+      <tr><td>Playdate</td><td>Handheld console</td><td>No ambient display; plays solo</td><td class="price">$229</td></tr>
+      <tr><td>Tidbyt / Divoom</td><td>Ambient LED display</td><td>You can't play it</td><td class="price">$179–199</td></tr>
+      <tr><td>Arduboy / PicoSystem</td><td>Tiny handheld</td><td>Solo, tiny, no display mode</td><td class="price">$79–80</td></tr>
+      <tr><td>Ulanzi / Awtrix</td><td>Smart pixel clock</td><td>Toy-grade games, single-player, closed</td><td class="price">~$55</td></tr>
+      <tr class="us"><td>Atech Arcade Duo</td><td>Console + display</td><td>The only credible <b>both</b></td><td class="price">$249</td></tr>
+    </table>
+    <p class="lead" style="margin-top:16px;max-width:64ch">Everyone else is <em>either</em> a player <em>or</em> a display. Owning "both" is what justifies a Playdate-tier price with Tidbyt-tier everyday utility. <span style="color:var(--faint)">(We win on console-grade play + tactile controls + the Atech kit underneath — not on "it has games.")</span></p>
+  </section>
+
+  <!-- 6 · BUSINESS -->
+  <section class="slide">
+    <div class="kicker">The business</div>
+    <h2>A hardware razor with a <span class="glow">software blade</span>.</h2>
+    <div class="ladder">
+      <div class="sku"><div class="name">Arcade OS</div><div class="price">$39</div><div class="sub">software for kit owners</div></div>
+      <div class="sku"><div class="name">Solo</div><div class="price">$149</div><div class="sub">single-board</div></div>
+      <div class="sku hero"><div class="name">Duo ⭐ hero</div><div class="price">$249</div><div class="sub">full 108-px console</div></div>
+      <div class="sku"><div class="name">Max</div><div class="price">$399</div><div class="sub">roadmap</div></div>
+      <div class="sku"><div class="name">Pass</div><div class="price">$19<span style="font-size:14px">/yr</span></div><div class="sub">+ $2–4 packs</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:22px">
+      <div class="card"><h3>The margin is real</h3><p>The Duo's parts cost <span class="hlA">~$292 at Atech retail</span> (12 Light Grids alone = $108) — so no third party can build a $249 console from them. At Atech's internal COGS <span class="hl">~$120–175</span> → <b style="color:var(--ink)">30–52% gross margin</b>. <span style="color:var(--faint)">(COGS is an estimated band.)</span></p></div>
+      <div class="card"><h3>…then it keeps earning</h3><p>Hardware sells once; <b style="color:var(--ink)">Arcade Pass + game packs</b> earn forever at ~95% margin, on rails Atech already owns silicon-to-store.</p></div>
+    </div>
+  </section>
+
+  <!-- 7 · WHY ATECH WINS -->
+  <section class="slide">
+    <div class="kicker">Why Atech wins</div>
+    <h2>Every unit pulls <span class="amberGlow">twelve Light Grids</span> through the door.</h2>
+    <ul class="clean">
+      <li><b>Module pull-through.</b> One Duo books 2 Motherboards + <b>12 Light Grids</b> + 2 Knobs + a Screen + a Speaker + 2 USB-C — <span class="hl">five module types, twelve of the one nobody buys twelve of.</span></li>
+      <li><b>New shelves for the same modules.</b> The maker aisle becomes gamer, gift, and classroom. TAM expansion with zero new tooling.</li>
+      <li><b>Recurring revenue that mirrors Atech's model.</b> Content packs on owned rails — a razor-and-blades business Atech controls end to end.</li>
+      <li><b>The moat:</b> the economics <em>only</em> close as a first-party / licensed Atech product. <span class="hl">This is uniquely Atech's to own.</span></li>
+    </ul>
+  </section>
+
+  <!-- 8 · REAL vs ROADMAP -->
+  <section class="slide">
+    <div class="kicker">Honest status</div>
+    <h2>A working prototype + credible economics —<br>not a finished retail unit.</h2>
+    <div class="cols">
+      <div class="real">
+        <h3>✓ Real today, on hardware</h3>
+        <ul>
+          <li>The <b>full console</b> — on-device OS + all <b>10 games</b> + 5 themes — runs on the two ESP32-S3 boards</li>
+          <li>Brain composes frames and streams them to the screen board, <b>verified end-to-end</b> (~59 fps on the 108-px matrix)</li>
+          <li>One dependency-free engine (firmware + desktop sim); CI + an end-to-end integration test green</li>
+        </ul>
+      </div>
+      <div class="road">
+        <h3>→ Clearly labeled roadmap</h3>
+        <ul>
+          <li>Board-to-board link is a <b>laptop USB bridge</b> today → native <b>ESP-NOW / WiFi</b> (code already in-tree)</li>
+          <li>The in-console <b>game market</b>: signed OTA → sandboxed cartridges</li>
+          <li>Bigger-matrix <b>Arcade Max</b>; phone-as-controller party modes</li>
+        </ul>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:18px;max-width:70ch">That's the honest version — and it's still a business.</p>
+  </section>
+
+  <!-- 9 · ASK -->
+  <section class="slide">
+    <div class="kicker">The ask</div>
+    <h2 style="max-width:22ch">Adopt Atech Arcade as your flagship <span class="glow">build-it-yourself console</span> + ambient display.</h2>
+    <p class="lead" style="max-width:52ch;font-size:clamp(19px,2.4vw,26px)">We bring the working build and the model. Atech brings the catalog, the cost base, and the storefront.</p>
+    <div class="powered" style="margin-top:34px;font-size:16px"><b>Powered by Atech.</b></div>
+  </section>
+
+</div>
+
+<div class="hud"><div class="dots" id="dots"></div></div>
+<div class="hint">← → to navigate · <b>P</b>rint to PDF</div>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var dots=document.getElementById('dots');
+  var cur=document.getElementById('cur');
+  var i=0;
+  slides.forEach(function(_,k){var d=document.createElement('i');d.onclick=function(){go(k)};dots.appendChild(d)});
+  var dl=dots.children;
+  function pad(n){return (n<9?'0':'')+(n+1)}
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach(function(s,k){s.classList.toggle('on',k===i)});
+    for(var k=0;k<dl.length;k++)dl[k].classList.toggle('on',k===i);
+    cur.textContent=pad(i);
+  }
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')go(i+1);
+    else if(e.key==='ArrowLeft'||e.key==='PageUp')go(i-1);
+    else if(e.key==='Home')go(0);
+    else if(e.key==='End')go(slides.length-1);
+    else if(e.key==='p'||e.key==='P')window.print();
+  });
+  document.getElementById('deck').addEventListener('click',function(e){
+    if(e.target.closest('a,.dots'))return;
+    go(i + (e.clientX > window.innerWidth*0.35 ? 1 : -1));
+  });
+  // glowing 6x18 matrix mock — a themed "menu" scatter
+  var mx=document.getElementById('mx');
+  if(mx){
+    var W=6,H=18, amber='#ffb24d', pink='#ff69b9', dim='#6b5a3a';
+    // a compact pattern: a bright center block + accents, echoing the live menu
+    var lit={}; // idx -> color
+    var block=[[3,1],[3,4],[4,1],[4,2],[4,4],[5,1],[5,2],[5,3],[5,4],[6,1],[6,4],[7,1],[7,4]];
+    block.forEach(function(p){lit[p[0]*W+p[1]]=amber});
+    [[2,0],[10,1],[10,2],[10,3],[10,4]].forEach(function(p){lit[p[0]*W+p[1]]='#ff6a4d'});
+    for(var r=0;r<H;r++)for(var c=0;c<W;c++){
+      var d=document.createElement('div');d.className='px';
+      var key=r*W+c;
+      if(lit[key]){d.classList.add('on');d.style.setProperty('--c',lit[key]);}
+      else if(Math.abs((r*7+c*3)%5)===0){d.style.background='#221a12';}
+      mx.appendChild(d);
+    }
+  }
+  go(0);
+})();
+</script>
+</body>
+</html>
