@@ -3,22 +3,41 @@
 **An extensible retro game *console* — and an ambient pixel display — built from stock
 [atech.dev](https://atech.dev) ESP32-S3 modules. No soldering.** Two boards click
 together: a **brain** (two rotary knobs + speaker + color TFT) runs an on-device OS and a
-library of games, and streams pixel frames to a **screen** (a 6×18 = 108-pixel NeoPixel
-matrix) that is a dumb, glowing renderer. When nobody's playing, the same matrix runs
-generative ambient scenes. Grew out of a two-player Pong; now it's a platform.
+library of games, composing each frame onto an abstract 6×18 canvas; a **screen** board
+decodes those frames and renders them to a **108-pixel NeoPixel matrix** through a smooth
+glow engine. Idle, the matrix runs generative ambient scenes. It grew out of a two-player
+Pong and is now an extensible platform — one dependency-free engine that runs identically
+on the firmware and a desktop simulator.
+
+<p align="center">
+  <img src="assets/menu.gif" width="460" alt="The animated game-select menu on the brain's 160x80 TFT">
+  <br><sub><b>The on-device menu</b> — a knob-tuned filmstrip launcher on the brain's 160×80 TFT, rendered by the real dashboard code.</sub>
+</p>
 
 <table>
   <tr>
-    <td align="center" valign="top">
-      <img src="assets/pong.gif" width="220" alt="The real 108-pixel matrix rendering a live game">
-    </td>
-    <td align="center" valign="top">
-      <img src="assets/controller.gif" width="440" alt="The console: two click-in knobs, a color scoreboard, and a speaker">
-    </td>
+    <td align="center"><img src="assets/games/eggcatch.gif" width="200"><br><b>eggcatch</b><br><sub>"Nu, pogodi!" egg-catch</sub></td>
+    <td align="center"><img src="assets/games/snake.gif" width="200"><br><b>snake</b><br><sub>relative-turn snake</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/games/pong.gif" width="200"><br><b>pong</b><br><sub>two-knob local Pong</sub></td>
+    <td align="center"><img src="assets/games/racing.gif" width="200"><br><b>racing</b><br><sub>Brick-Game car dodge</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/games/flappy.gif" width="200"><br><b>flappy</b><br><sub>flap through the gaps</sub></td>
+    <td align="center"><img src="assets/games/doodlejump.gif" width="200"><br><b>doodlejump</b><br><sub>auto-bounce climber</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/games/invaders.gif" width="200"><br><b>invaders</b><br><sub>formation shooter</sub></td>
+    <td align="center"><img src="assets/games/jukebox.gif" width="200"><br><b>jukebox</b><br><sub>RTTTL player + VU meter</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/games/ambient.gif" width="200"><br><b>ambient</b><br><sub>0-player generative scenes</sub></td>
+    <td align="center"><img src="assets/games/demo.gif" width="200"><br><b>demo</b><br><sub>smallest reference game</sub></td>
   </tr>
 </table>
 
-*The left GIF is the real firmware engine rendering itself onto the 6×18 matrix.*
+*Hero + gallery are real glow renders of the firmware rendering itself — the menu on the 160×80 TFT, the games on the 6×18 matrix.*
 
 ## The two gadgets
 
