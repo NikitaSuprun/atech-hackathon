@@ -92,8 +92,10 @@ make -C modules/console_e2e    test    # end-to-end: brain → wire → screen r
 # Aesthetic eval + visual-regression render (glowing PNG/GIF per game, no hardware):
 PYTHONPATH=tools uv run --group dev python tools/eval/run.py
 
-# PC mirror over Web-Serial (Chrome/Edge; "Mock" mode needs no board):
-open host/dashboard/index.html
+# Browser twin — runs the REAL dashboard (BrainOS + TftDashboard) in WASM; open it directly:
+open host/dashboard/index.html               # standalone: Web-Serial or "Mock" (no board)
+# ...or serve it live to the whole LAN (also bridges to the boards if they're attached):
+.venv/bin/python tools/twin_server.py        # then open http://<this-machine-ip>:8080/
 ```
 
 Valid `GAME=` values: `pong snake eggcatch racing flappy doodlejump invaders jukebox ambient demo`.
@@ -123,7 +125,7 @@ flowchart LR
     direction TB
     RB["ScreenRenderBoard<br/>drain link → frameDecodeInto"]
     SR["ScreenRenderer<br/>LightEngine (decay + bloom)<br/>Compositor (serpentine + rotation)"]
-    NT["12 × NeoTile (WS2812)"]
+    NT["12 × NeoTile (SK6812/RGBW)"]
     RB --> SR --> NT
   end
 
