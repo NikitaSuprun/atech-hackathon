@@ -103,20 +103,32 @@ Valid `GAME=` values: `pong snake eggcatch racing flappy doodlejump invaders juk
 Ports-and-adapters. Games draw only to a `Canvas` using **theme tokens** (never hex, never
 LED wiring). The brain composes a frame and ships pixels; the screen just glows.
 
-```
-        BRAIN board (owns logic)                         SCREEN board (dumb renderer)
- ┌───────────────────────────────────┐            ┌────────────────────────────────────┐
- │ BrainOS   fixed 50 Hz loop         │            │ ScreenRenderBoard                  │
- │  menu · settings · active game     │            │  drain link → frameDecodeInto      │
- │  draws → Canvas 6×18  Color[108]   │            │  → persistent logical canvas       │
- │  + active Theme + LightProfile     │            │ ScreenRenderer                     │
- │                                    │  COBS-     │  LightEngine  (decay + bloom)      │
- │ LinkFrameSink                      │  framed    │  Compositor   (serpentine + rot)   │
- │  frameEncode → MSG_FRAME (RGB565,  │  frames    │  → 12 × NeoTile (WS2812)           │
- │   full or dirty-rect)              │ ─────────► │  → 6×18 = 108-px matrix @ 20% cap   │
- │  MSG_SET_LIGHT_PROFILE on restyle  │ (PongLink) │                                    │
- └───────────────────────────────────┘            └────────────────────────────────────┘
-   2 knobs · speaker · 160×80 TFT                    108 NeoPixels (12 snap-in 3×3 tiles)
+```mermaid
+flowchart LR
+  KB["2 rotary knobs<br/>+ I2S speaker"] -.-> OS
+
+  subgraph BRAIN["Brain board — owns all logic"]
+    direction TB
+    OS["BrainOS · fixed 50 Hz loop<br/>menu · settings · active game"]
+    DASH["TftDashboard<br/>animated menu / now-playing HUD"]
+    CV["draws → Canvas 6×18<br/>Color[108] + Theme + LightProfile"]
+    FS["LinkFrameSink<br/>frameEncode → MSG_FRAME (RGB565)"]
+    OS --> DASH
+    OS --> CV --> FS
+  end
+
+  DASH --> TFT["160×80 ST7735 TFT<br/>(the menu you drive)"]
+
+  subgraph SCREEN["Screen board — content-agnostic renderer"]
+    direction TB
+    RB["ScreenRenderBoard<br/>drain link → frameDecodeInto"]
+    SR["ScreenRenderer<br/>LightEngine (decay + bloom)<br/>Compositor (serpentine + rotation)"]
+    NT["12 × NeoTile (WS2812)"]
+    RB --> SR --> NT
+  end
+
+  FS ==>|"COBS-framed frames + light profile"| RB
+  NT --> MATRIX["6×18 = 108-px NeoPixel matrix<br/>(20% brightness cap · the playfield)"]
 ```
 
 Games are **deterministic** (all randomness from `ctx.rngSeed`, all motion from `dtMs`,
