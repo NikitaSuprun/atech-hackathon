@@ -1,5 +1,11 @@
 # Two-Board Pong on Atech Hardware — Master Plan
 
+> ⚠️ **SUPERSEDED / ARCHIVED (2026-07-05).** This is the original pre-pivot two-player-Pong
+> master plan, kept verbatim as historical record. The shipped product is **Atech Arcade** — a
+> 10-game console (Pong is just one of the games) with a **COBS-over-USB-CDC** link, not WiFi/UDP.
+> For current reality see **[ARCHITECTURE.md](ARCHITECTURE.md)** and **[STATE.md](STATE.md)**.
+> Nothing below reflects the shipped console.
+
 > Status 2026-07-04: plan finalized & approved. No game code written yet.
 > Companion doc: [HANDOVER.md](HANDOVER.md) (operational quick-start).
 > Everything below was verified against the installed SDK source — paths included so nothing needs re-exploring.
