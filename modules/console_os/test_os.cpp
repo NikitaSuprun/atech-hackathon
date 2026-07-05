@@ -240,14 +240,18 @@ int main() {
     Color frameB[SCREEN_PX];
     memcpy(frameB, os.frame(), sizeof(frameB));
 
-    // (5,2) is a guaranteed-background pixel in the menu layout: it equals the
-    // active theme's BG token, so it proves the shell restyled to the new theme.
-    const int bgIdx = 2 * SCREEN_W + 5;
+    // The menu backdrop is the ambient scene now (theme-token colors, cleared to
+    // ROLE_BG each frame), so each theme's frame CONTAINS that theme's background —
+    // proving the shell restyled, without depending on a static menu-pixel layout.
     Color bgA = THEMES[idxA].role[console::ROLE_BG];
     Color bgB = THEMES[idxAfter].role[console::ROLE_BG];
+    auto hasColor = [](const Color* f, Color c) {
+        for (int i = 0; i < SCREEN_PX; ++i) if (eqC(f[i], c)) return true;
+        return false;
+    };
     check(!eqC(bgA, bgB), "the two themes have distinct backgrounds");
-    check(eqC(frameA[bgIdx], bgA), "pre-switch menu used theme A's background");
-    check(eqC(frameB[bgIdx], bgB), "post-switch menu re-renders in theme B's background");
+    check(hasColor(frameA, bgA), "menu backdrop shows theme A's background");
+    check(hasColor(frameB, bgB), "menu backdrop shows theme B's background");
     check(memcmp(frameA, frameB, sizeof(frameA)) != 0, "menu framebuffer changed after restyle");
 
     // ---- OS-owned fixed-rate loop: pump wall-clock, expect TICK_MS stepping ----

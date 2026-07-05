@@ -19,6 +19,13 @@ void BrainOS::begin() {
 
     mode_ = Mode::Menu;
     menu_ = MenuState{};
+
+    // Seed the menu-mode ambient backdrop (theme-colored, auto-cycles hands-free).
+    ctx_.audio   = audio_;
+    ctx_.theme   = &themes_.active();
+    ctx_.rngSeed = seed_ ? seed_ : 0xC0FFEEu;
+    ambientBg_.init(ctx_);
+
     // Prime the light profile so the screen adapter has one before the first frame.
     lastLight_ = lightProfile();
     haveLight_ = true;
@@ -29,6 +36,7 @@ console::LightProfile BrainOS::lightProfile() const {
     console::LightProfile lp = themes_.active().light;
     lp.wallBrightness =
         uint8_t((uint16_t(lp.wallBrightness) * settings_.brightness) / 255u);
+    if (lp.wallBrightness < 12) lp.wallBrightness = 12;  // display never goes fully dark
     return lp;
 }
 
@@ -72,10 +80,11 @@ void BrainOS::updateActive(const Input& in, uint32_t dtMs) {
                 sfx_.openSettings();
                 mode_ = Mode::Settings;
                 set_  = SettingsState{};
-            } else if (menu_.sel != prevSel) {
-                sfx_.navTick();
             } else {
-                sfx_.idle(menu_.sinceMov);
+                if (menu_.sel != prevSel) sfx_.navTick();
+                else if (settings_.menuMusic) sfx_.idle(menu_.sinceMov);  // opt-in ambient loop
+                console::Input quiet{};
+                ambientBg_.update(quiet, dtMs);  // evolve the LED backdrop while browsing
             }
             break;
         }
@@ -124,7 +133,7 @@ void BrainOS::drawActive() {
     const console::Theme& t = themes_.active();
     switch (mode_) {
         case Mode::Menu:
-            menuDraw(menu_, reg_, canvas_, t);
+            ambientBg_.draw(canvas_, t);  // the menu is on the TFT; the display shows ambient
             break;
         case Mode::Settings: {
             SettingsCtx sc{themes_, audio_, settings_, &store_};
@@ -149,7 +158,7 @@ void BrainOS::emit() {
     if (sink_) sink_->frame(buf_, seq_);
     ++seq_;
     console::LightProfile lp = lightProfile();
-    if (!haveLight_ || memcmp(&lp, &lastLight_, sizeof(lp)) != 0) {
+    if (!haveLight_ || (seq_ % LIGHT_RESEND_TICKS == 0) || memcmp(&lp, &lastLight_, sizeof(lp)) != 0) {
         lastLight_ = lp;
         haveLight_ = true;
         if (sink_) sink_->light(lp);

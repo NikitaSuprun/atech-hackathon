@@ -13,6 +13,7 @@ struct Settings {
     uint8_t themeIndex = 0;
     uint8_t volume     = 40;   // 0..255 -> Audio::setVolume(v / 255.0f); quiet by default
     uint8_t brightness = 255;  // 0..255 -> scales theme wallBrightness ceiling
+    bool    menuMusic  = false;  // ambient audio loop in the menu — off by default
 };
 
 // Per-detent step for the settings sliders (~16 detents spans the full range).
@@ -62,19 +63,20 @@ public:
     bool load(Settings& out) override {
         FILE* f = fopen(path_, "rb");
         if (!f) return false;
-        uint8_t b[6] = {0};
+        uint8_t b[7] = {0};
         size_t n = fread(b, 1, sizeof(b), f);
         fclose(f);
-        if (n != sizeof(b) || b[0] != 'S' || b[1] != 'O' || b[2] != '1') return false;
+        if (n != sizeof(b) || b[0] != 'S' || b[1] != 'O' || b[2] != '2') return false;
         out.themeIndex = b[3];
         out.volume     = b[4];
         out.brightness = b[5];
+        out.menuMusic  = b[6] != 0;
         return true;
     }
     void save(const Settings& s) override {
         FILE* f = fopen(path_, "wb");
         if (!f) return;
-        uint8_t b[6] = {'S', 'O', '1', s.themeIndex, s.volume, s.brightness};
+        uint8_t b[7] = {'S', 'O', '2', s.themeIndex, s.volume, s.brightness, uint8_t(s.menuMusic)};
         fwrite(b, 1, sizeof(b), f);
         fclose(f);
     }
@@ -100,6 +102,7 @@ public:
         out.themeIndex = p.getUChar("theme", out.themeIndex);
         out.volume     = p.getUChar("vol", out.volume);
         out.brightness = p.getUChar("bright", out.brightness);
+        out.menuMusic  = p.getBool("music", out.menuMusic);
         p.end();
         return has;
     }
@@ -109,6 +112,7 @@ public:
         p.putUChar("theme", s.themeIndex);
         p.putUChar("vol", s.volume);
         p.putUChar("bright", s.brightness);
+        p.putBool("music", s.menuMusic);
         p.end();
     }
 

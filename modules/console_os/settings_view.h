@@ -15,7 +15,7 @@
 
 namespace console_os {
 
-enum class SettingsRow : uint8_t { Volume, Brightness, Theme, COUNT };
+enum class SettingsRow : uint8_t { Volume, Brightness, Theme, Music, COUNT };
 enum class SettingsAction : uint8_t { None, Back };
 
 struct SettingsState {
@@ -76,6 +76,11 @@ inline SettingsAction settingsUpdate(SettingsState& s, SettingsCtx& ctx,
                 changed = true;
                 break;
             }
+            case SettingsRow::Music: {
+                bool nm = adj > 0;  // knob1 right = on, left = off
+                if (nm != ctx.settings.menuMusic) { ctx.settings.menuMusic = nm; changed = true; }
+                break;
+            }
             default: break;
         }
     }
@@ -93,7 +98,8 @@ inline void settingsDraw(const SettingsState& s, const SettingsCtx& ctx,
     const SettingsRow row = SettingsRow(s.row);
     const char* title = row == SettingsRow::Volume       ? "VOLUME"
                         : row == SettingsRow::Brightness ? "BRIGHT"
-                                                         : "THEME";
+                        : row == SettingsRow::Theme      ? "THEME"
+                                                         : "MUSIC";
 
     // Row selector pips down the left rail.
     gfx::pipsV(c, 0, 2, int(SettingsRow::COUNT), s.row, t.c(ROLE_ACCENT), t.c(ROLE_DIM));
@@ -107,7 +113,7 @@ inline void settingsDraw(const SettingsState& s, const SettingsCtx& ctx,
         gfx::meter(c, 0, 9, SCREEN_W, 3, ctx.settings.volume, t.c(ROLE_ACCENT), t.c(ROLE_DIM));
     } else if (row == SettingsRow::Brightness) {
         gfx::meter(c, 0, 9, SCREEN_W, 3, ctx.settings.brightness, t.c(ROLE_GOOD), t.c(ROLE_DIM));
-    } else {
+    } else if (row == SettingsRow::Theme) {
         // THEME: name marquee + one pip per theme, active pip glowing.
         gfx::label(c, 8, t.name, gfx::dim(t.c(ROLE_ACCENT), glow), s.tMs + 300);
         int n = ctx.themes.count();
@@ -115,6 +121,10 @@ inline void settingsDraw(const SettingsState& s, const SettingsCtx& ctx,
         if (x0 < 0) x0 = 0;
         gfx::pipsH(c, x0, 15, n, ctx.themes.index(),
                    gfx::dim(t.c(ROLE_ACCENT2), glow), t.c(ROLE_DIM), 1);
+    } else {
+        // MUSIC: a full bar when on, empty when off.
+        gfx::meter(c, 0, 9, SCREEN_W, 3, ctx.settings.menuMusic ? 255 : 0,
+                   gfx::dim(t.c(ROLE_ACCENT2), glow), t.c(ROLE_DIM));
     }
 }
 

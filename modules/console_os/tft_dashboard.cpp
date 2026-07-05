@@ -205,35 +205,38 @@ void TftDashboard::drawSettings(const BrainOS& os, const console::Theme& t, uint
     int row = os.settingsRow();
     const Settings& s = os.settings();
 
-    tft_.text(FontId::SansBold, 8, 11, "SETTINGS", C(t.c(ROLE_ACCENT), bright), Align::Left);
-    tft_.text(FontId::Small, 156, 8, t.name, C(t.c(ROLE_DIM), bright), Align::Right);
+    tft_.text(FontId::SansBold, 8, 10, "SETTINGS", C(t.c(ROLE_ACCENT), bright), Align::Left);
+    tft_.text(FontId::Small, 156, 7, t.name, C(t.c(ROLE_DIM), bright), Align::Right);
 
-    static const char* const labels[3] = {"VOLUME", "BRIGHTNESS", "THEME"};
-    for (int i = 0; i < 3; ++i) {
-        int y = 30 + i * 15;
+    static const char* const labels[4] = {"VOLUME", "BRIGHTNESS", "THEME", "MENU MUSIC"};
+    for (int i = 0; i < 4; ++i) {
+        int y = 26 + i * 12;
         bool on = (i == row);
         if (on) {
-            tft_.fillRect(4, y - 7, 152, 14, C(mix(bg, t.c(ROLE_ACCENT), 0.16f), bright));
-            tft_.text(FontId::Small, 10, y, ">", C(t.c(ROLE_ACCENT), bright), Align::Left);
+            tft_.fillRect(4, y - 6, 152, 12, C(mix(bg, t.c(ROLE_ACCENT), 0.16f), bright));
+            tft_.text(FontId::Small, 9, y, ">", C(t.c(ROLE_ACCENT), bright), Align::Left);
         }
-        tft_.text(FontId::Small, 20, y, labels[i], C(on ? t.c(ROLE_ACCENT) : t.c(ROLE_INK), bright),
+        tft_.text(FontId::Small, 18, y, labels[i], C(on ? t.c(ROLE_ACCENT) : t.c(ROLE_INK), bright),
                   Align::Left);
         if (i < 2) {
             int val = (i == 0) ? s.volume : s.brightness;
-            const int bx = 82, bw = 66;
+            const int bx = 94, bw = 54;
             tft_.fillRect(bx, y - 3, bw, 6, C(t.c(ROLE_DIM), bright));
             tft_.fillRect(bx, y - 3, bw * val / 255, 6,
                           C(i == 0 ? t.c(ROLE_ACCENT2) : t.c(ROLE_GOOD), bright));
-        } else {
+        } else if (i == 2) {
             int nT = os.themes().count(), active = os.themes().index();
             for (int j = 0; j < nT && j < 6; ++j) {
-                const int sw = 12, xx = 82 + j * (sw + 2);
-                tft_.fillRect(xx, y - 4, sw, 9, C(os.themes().at(j).c(ROLE_ACCENT), bright));
-                if (j == active) tft_.drawRect(xx - 1, y - 5, sw + 2, 11, C(t.c(ROLE_INK), bright));
+                const int sw = 10, xx = 94 + j * (sw + 1);
+                tft_.fillRect(xx, y - 4, sw, 8, C(os.themes().at(j).c(ROLE_ACCENT), bright));
+                if (j == active) tft_.drawRect(xx - 1, y - 5, sw + 2, 10, C(t.c(ROLE_INK), bright));
             }
+        } else {
+            tft_.text(FontId::Small, 148, y, s.menuMusic ? "ON" : "OFF",
+                      C(s.menuMusic ? t.c(ROLE_ACCENT2) : t.c(ROLE_DIM), bright), Align::Right);
         }
     }
-    tft_.text(FontId::Small, 80, 76, "KNOB 2 ADJUSTS", C(t.c(ROLE_DIM), bright), Align::Center);
+    tft_.text(FontId::Small, 80, 75, "KNOB 2 ADJUSTS", C(t.c(ROLE_DIM), bright), Align::Center);
 }
 
 void TftDashboard::drawGame(const BrainOS& os, const console::Theme& t, uint8_t bright) {

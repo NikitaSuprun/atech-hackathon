@@ -15,6 +15,8 @@
 #include "settings_view.h"
 #include "ui_audio.h"
 
+#include "ambient.h"  // reused as the menu-mode LED backdrop (theme-colored scenes)
+
 // Brain OS — the on-device shell. It owns the fixed-rate loop, the one framebuffer
 // every app draws into, the active theme, master volume, brightness, and the app
 // lifecycle (menu <-> game, with a pause overlay that never tears the game down).
@@ -96,6 +98,7 @@ private:
     MenuState     menu_;
     SettingsState set_;
     OverlayState  ov_;
+    ambient::AmbientGame ambientBg_;  // menu-mode backdrop on the 6x18 display
 
     console::Game*       game_    = nullptr;
     int                  gameIdx_ = -1;
@@ -107,7 +110,8 @@ private:
     console::LightProfile lastLight_ = {};
 
     // pump() fixed-timestep accumulator
-    static constexpr int MAX_CATCHUP_STEPS = 4;
+    static constexpr int      MAX_CATCHUP_STEPS  = 4;
+    static constexpr uint16_t LIGHT_RESEND_TICKS = 100;  // ~2s at TICK_HZ — heal a late display
     uint32_t accMs_    = 0;
     uint32_t lastNow_  = 0;
     bool     pumpInit_ = false;
