@@ -32,7 +32,8 @@ public:
 
     void tick(uint32_t now) {
         link_.poll(now);
-        if ((uint32_t)(now - lastTickMs_) < TICK_MS) return;
+        // Qualify: an unnamespaced pong TICK_MS also leaks in via pong_config.h.
+        if ((uint32_t)(now - lastTickMs_) < console::TICK_MS) return;
         lastTickMs_ = now;
 
         bool force = false;
