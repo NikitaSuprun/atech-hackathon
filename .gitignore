@@ -23,3 +23,7 @@ modules/screen_render/test_console
 modules/console_os/os_test
 modules/link/link_test
 modules/console_e2e/e2e_test
+
+# PlatformIO firmware build dirs
+.pio/
+firmware/*/.pio/
