@@ -1,0 +1,61 @@
+# Host render of the animated TFT menu -> a frame dump for assets/menu.gif.
+# Self-contained + ADD-ONLY: compiles the REAL OS sources (tft_dashboard/brain_os/
+# builtin_games/themes) against a HostTft backed by the vendored Adafruit GFX
+# (GFXcanvas16 + FreeSansBold fonts) behind a tiny Arduino shim — true pixel parity.
+#
+#   make -f Makefile.menu           build sim/menu_dump
+#   make -f Makefile.menu dump      build + write menu_frames.bin
+#   make -f Makefile.menu gif       build + dump + assets/menu.gif (needs uv/ffmpeg)
+#   make -f Makefile.menu clean
+#
+# Does NOT modify any firmware/OS source; mirrors modules/console_os/Makefile.
+
+CXX ?= g++
+
+OS_DIR   = ../modules/console_os
+GFXDIR   = ../firmware/brain/.pio/libdeps/esp32-s3-devkitc-1/Adafruit GFX Library
+
+# Same game -I set as modules/console_os/Makefile, plus our shim + the GFX dir.
+INCLUDES = -I. -I$(OS_DIR) -I../include -I../games/_sdk \
+           -I../games/eggcatch -I../games/snake -I../games/pong \
+           -I../games/racing -I../games/flappy -I../games/doodlejump \
+           -I../games/invaders -I../games/jukebox -I../games/ambient \
+           -I../games/demo \
+           -Ihost_gfx_shim -I"$(GFXDIR)"
+
+# CONSOLE_OS_HOST: same host switch the OS build uses. ARDUINO=100: pick the
+# Adafruit_GFX.h "Arduino.h"/"Print.h" path (our shim) over WProgram.h.
+CXXFLAGS = -std=c++14 -O2 -Wall -Wextra -DCONSOLE_OS_HOST -DARDUINO=100 $(INCLUDES)
+
+# Real OS sources (space-free paths) + our harness.
+SRC = menu_dump.cpp \
+      $(OS_DIR)/tft_dashboard.cpp \
+      $(OS_DIR)/brain_os.cpp \
+      $(OS_DIR)/builtin_games.cpp \
+      ../include/console/themes.cpp
+
+# The vendored Adafruit GFX .cpp lives under a path WITH A SPACE, so it is only
+# ever referenced (quoted) inside the recipe, never as a make prerequisite.
+GFX_SRC = $(GFXDIR)/Adafruit_GFX.cpp
+
+HDR = host_tft.h $(wildcard host_gfx_shim/*.h) \
+      $(wildcard $(OS_DIR)/*.h) $(wildcard ../include/console/*.h) \
+      $(wildcard ../games/_sdk/*.h) $(wildcard ../games/*/*.h)
+
+BIN     = menu_dump
+DUMP    = menu_frames.bin
+GIF     = ../assets/menu.gif
+THEME  ?= 0
+
+$(BIN): $(SRC) $(HDR)
+	$(CXX) $(CXXFLAGS) $(SRC) "$(GFX_SRC)" -o $(BIN)
+
+.PHONY: dump gif clean
+dump: $(BIN)
+	./$(BIN) $(DUMP) $(THEME)
+
+gif: dump
+	uv run --group dev python menu_gif.py $(DUMP) $(GIF)
+
+clean:
+	rm -f $(BIN) $(DUMP)
