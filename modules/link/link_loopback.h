@@ -24,11 +24,14 @@ public:
         size_t n = console::cobsEncode((const uint8_t*)buf, len, enc, sizeof(enc));
         if (n == 0) return false;
         enc[n++] = 0;  // 0x00 frame delimiter
+        // Atomic: only commit if the WHOLE framed packet fits (one slot kept free
+        // as the full sentinel). A partial write would leave a torn, delimiter-less
+        // COBS block behind and corrupt the next packet the reader reassembles.
+        size_t used = (head_ - tail_ + kCap) % kCap;
+        if (n > kCap - 1 - used) return false;  // wire full: drop the whole datagram
         for (size_t i = 0; i < n; ++i) {
-            size_t next = (head_ + 1) % kCap;
-            if (next == tail_) return false;  // wire full (test under-sized the ring)
             wire_[head_] = enc[i];
-            head_ = next;
+            head_ = (head_ + 1) % kCap;
         }
         return true;
     }

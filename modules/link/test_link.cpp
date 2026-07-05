@@ -59,6 +59,29 @@ int main() {
     check(len > 0 && lightDecode(buf, (size_t)len, got), "light profile decodes");
     check(memcmp(&lp, &got, sizeof(LightProfile)) == 0, "light profile round-trips exactly");
 
+    // Overflow is atomic: fill the wire until sendRaw refuses, then EVERY drained
+    // datagram must still decode cleanly. A torn partial write (the old bug) would
+    // leave a delimiter-less block that corrupts the next reassembled packet.
+    {
+        LinkLoopback lb;
+        uint8_t      pkt[FRAME_MAX_PACKET];
+        size_t plen = frameEncode(src, 0, 0, SCREEN_W, SCREEN_H, 1, pkt, sizeof(pkt));
+        int accepted = 0;
+        while (accepted < 100000 && lb.sendRaw(pkt, plen)) ++accepted;
+        check(accepted > 1, "loopback accepts frames, then refuses when full");
+
+        Color   tmp[SCREEN_PX];
+        uint8_t rb[FRAME_MAX_PACKET];
+        int     drained = 0, clean = 0, m;
+        while ((m = lb.recvRaw(rb, sizeof(rb))) > 0) {
+            ++drained;
+            if (frameType(rb, (size_t)m) == MSG_FRAME && frameDecodeInto(rb, (size_t)m, tmp))
+                ++clean;
+        }
+        check(drained == accepted, "drained exactly the accepted datagrams (none torn)");
+        check(clean == drained, "every drained datagram decodes (atomic overflow)");
+    }
+
     printf(g_failures ? "\nLINK ADAPTER TEST FAILED (%d)\n" : "\nLINK ADAPTER TEST OK\n", g_failures);
     return g_failures ? 1 : 0;
 }

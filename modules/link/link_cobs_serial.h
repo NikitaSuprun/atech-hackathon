@@ -21,6 +21,10 @@ public:
         size_t n = console::cobsEncode((const uint8_t*)buf, len, enc, sizeof(enc));
         if (n == 0) return false;
         enc[n++] = 0;  // frame delimiter
+        // Serial runs non-blocking (setTxTimeoutMs(0)); only send if the framed
+        // packet fits the TX buffer whole — a partial write would tear the COBS
+        // framing. Dropping the frame instead self-heals via the screen heartbeat.
+        if (Serial.availableForWrite() < (int)n) return false;
         Serial.write(enc, n);
         return true;
     }
