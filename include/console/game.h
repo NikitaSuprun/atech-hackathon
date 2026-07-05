@@ -19,7 +19,7 @@ struct GameContext {
     uint32_t     rngSeed;
 };
 
-enum GameEvent : uint8_t { EV_PAUSE, EV_RESUME, EV_MENU, EV_EXIT };
+enum GameEvent : uint8_t { EV_PAUSE, EV_RESUME, EV_MENU };
 
 struct GameMeta {
     const char*    name;
