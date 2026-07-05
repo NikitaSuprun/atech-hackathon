@@ -83,8 +83,12 @@ def bridge_loop():
             time.sleep(1.5)
             continue
         try:
-            brain = serial.Serial(brain_p, 115200, timeout=0.05)
-            screen = serial.Serial(screen_p, 115200, timeout=0.05)
+            # brain: block briefly for the first byte then take everything buffered,
+            # so the thread sleeps when idle but drains continuously once frames flow
+            # (no busy-poll). screen: non-blocking -- it is silent by design, so a
+            # blocking read there would stall the whole relay.
+            brain = serial.Serial(brain_p, 115200, timeout=0.02)
+            screen = serial.Serial(screen_p, 115200, timeout=0)
         except Exception as e:
             print("[twin] open failed:", e)
             time.sleep(1.5)
@@ -92,11 +96,14 @@ def bridge_loop():
         print(f"[twin] bridge up: {brain_p} (brain) -> {screen_p} (screen)  +  SSE fan-out")
         try:
             while True:
-                d = brain.read(4096)
+                d = brain.read(1)
                 if d:
+                    n = brain.in_waiting
+                    if n:
+                        d += brain.read(n)
                     screen.write(d)   # feed the physical wall
                     broadcast(d)      # feed every network dashboard
-                back = screen.read(256)
+                back = screen.read(256)  # non-blocking: returns at once
                 if back:
                     brain.write(back)
         except Exception as e:
