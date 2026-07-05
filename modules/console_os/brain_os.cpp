@@ -163,6 +163,35 @@ void BrainOS::emit() {
         haveLight_ = true;
         if (sink_) sink_->light(lp);
     }
+    // Passive twin: stream the ~10-byte OS nav state at ~10 Hz so a browser replica
+    // renders the real TftDashboard with no pixel streaming.
+    if (sink_ && seq_ % 5 == 0) {
+        console::BoardNav nav{};
+        nav.mode            = uint8_t(mode_);
+        nav.menuSel         = uint8_t(menu_.sel);
+        nav.activeGameIndex = int8_t(gameIdx_);
+        nav.settingsRow     = uint8_t(set_.row);
+        nav.overlay         = uint8_t((ov_.open ? 0x10 : 0) | (ov_.sel & 0x0F));
+        nav.themeIndex      = uint8_t(themes_.index());
+        nav.brightness      = settings_.brightness;
+        nav.volume          = settings_.volume;
+        nav.flags           = settings_.menuMusic ? 1 : 0;
+        sink_->nav(nav);
+    }
+}
+
+void BrainOS::applyTwinNav(const console::BoardNav& nav) {
+    mode_     = Mode(nav.mode);
+    menu_.sel = nav.menuSel;
+    gameIdx_  = nav.activeGameIndex;
+    set_.row  = nav.settingsRow;
+    ov_.open  = (nav.overlay & 0x10) != 0;
+    ov_.sel   = nav.overlay & 0x0F;
+    if (nav.themeIndex != uint8_t(themes_.index())) themes_.setActive(nav.themeIndex);
+    settings_.themeIndex = nav.themeIndex;
+    settings_.brightness = nav.brightness;
+    settings_.volume     = nav.volume;
+    settings_.menuMusic  = (nav.flags & 1) != 0;
 }
 
 void BrainOS::launch(int gameIndex) {

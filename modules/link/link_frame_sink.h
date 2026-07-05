@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "console/frame_proto.h"
+#include "console/host_proto.h"  // console::BoardInput / WireInput / hostEncode
 #include "frame_sink.h"  // console_os::FrameSink   (-I ../console_os)
 #include "pong_link.h"   // PongLink                (-I ../pong_screen)
 
@@ -28,9 +29,23 @@ public:
         if (n) link_.sendRaw(buf_, n);
     }
 
+    void input(const console::WireInput& wi) override {
+        console::BoardInput msg{};
+        msg.in = wi;
+        size_t n = console::hostEncode(msg, inputSeq_++, buf_, sizeof(buf_));
+        if (n) link_.sendRaw(buf_, n);
+    }
+
+    void nav(const console::BoardNav& n) override {
+        size_t sz = console::hostEncode(n, navSeq_++, buf_, sizeof(buf_));
+        if (sz) link_.sendRaw(buf_, sz);
+    }
+
 private:
     PongLink& link_;
     uint16_t  lightSeq_ = 0;
+    uint16_t  inputSeq_ = 0;
+    uint16_t  navSeq_   = 0;
     uint8_t   buf_[console::FRAME_MAX_PACKET];
 };
 

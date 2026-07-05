@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "console/color.h"
 #include "console/config.h"
+#include "console/host_proto.h"
 #include "console/theme.h"
 
 // Where the OS emits each composed tick. The OS never talks to a transport: it
@@ -17,6 +18,11 @@ public:
     virtual ~FrameSink() {}
     virtual void frame(const console::Color* px, uint16_t seq) = 0;
     virtual void light(const console::LightProfile& lp) = 0;
+    // Live knob state for a passive mirror (the browser twin); no-op by default so
+    // host-test capture sinks need not implement it.
+    virtual void input(const console::WireInput&) {}
+    // High-level OS nav state so a twin renders the real TFT from it; no-op default.
+    virtual void nav(const console::BoardNav&) {}
 };
 
 }  // namespace console_os

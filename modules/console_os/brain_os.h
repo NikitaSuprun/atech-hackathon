@@ -53,6 +53,11 @@ public:
 
     void setSeed(uint32_t s) { seed_ = s; }
 
+    // Twin/mirror only: force the OS to a streamed nav snapshot so a passive replica
+    // renders the real TftDashboard from the device's authoritative state. Never
+    // called on the device itself.
+    void applyTwinNav(const console::BoardNav& nav);
+
     // ---- outputs ----
     const console::Color* frame() const { return buf_; }
     // Active theme's LightProfile with wallBrightness scaled by the brightness

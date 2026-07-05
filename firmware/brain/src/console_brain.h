@@ -50,6 +50,12 @@ public:
         fillKnob(in.knob[1], k1_.getPosition(), k1_.isPressed(), st1_);
         os_.pump(nowMs, in);
         dash_.render(os_, nowMs);
+        // Mirror live knob state to a passive twin (the browser dashboard).
+        console::WireInput wi;
+        wi.knobPos[0] = in.knob[0].pos;
+        wi.knobPos[1] = in.knob[1].pos;
+        wi.heldBits = uint8_t((in.knob[0].down ? 1 : 0) | (in.knob[1].down ? 2 : 0));
+        sink_.input(wi);
     }
 
 private:

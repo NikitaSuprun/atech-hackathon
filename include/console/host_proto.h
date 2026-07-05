@@ -26,6 +26,8 @@ enum HostMsgType : uint8_t {
     HOST_SELECT_GAME  = 0x13,  // launch a game by id
     // board -> host
     BOARD_TELEMETRY   = 0x20,  // periodic state snapshot
+    BOARD_INPUT       = 0x21,  // live knob positions + buttons (passive twin mirror)
+    BOARD_NAV         = 0x22,  // ~10-B OS nav state so a twin renders the real TFT
 };
 
 #pragma pack(push, 1)
@@ -79,6 +81,31 @@ struct BoardTelemetry {
     uint8_t    linkUp;      // controller link associated (bool)
     uint16_t   fps;         // rendered frames/s (diagnostics)
     static constexpr uint8_t TYPE = BOARD_TELEMETRY;
+};
+
+// Live knob state, board -> host, so a passive mirror (the browser twin) can show
+// the real knobs. Same WireInput the host injects, just the other direction.
+struct BoardInput {
+    HostHeader h;
+    WireInput  in;
+    static constexpr uint8_t TYPE = BOARD_INPUT;
+};
+
+// High-level OS navigation state, board -> host. The TFT dashboard is a pure
+// function of these ~10 bytes, so a browser twin renders the REAL TftDashboard
+// from this alone — no pixel streaming, no seed, no per-tick input lockstep.
+struct BoardNav {
+    HostHeader h;
+    uint8_t mode;             // console_os::Mode (Boot/Menu/Settings/Game)
+    uint8_t menuSel;          // launcher selection
+    int8_t  activeGameIndex;  // -1 in menu
+    uint8_t settingsRow;      // settings-screen row
+    uint8_t overlay;          // (open ? 0x10 : 0) | (sel & 0x0F)
+    uint8_t themeIndex;
+    uint8_t brightness;
+    uint8_t volume;
+    uint8_t flags;            // bit0 = menuMusic
+    static constexpr uint8_t TYPE = BOARD_NAV;
 };
 
 #pragma pack(pop)
