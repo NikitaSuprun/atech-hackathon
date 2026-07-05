@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Atech Arcade">
+  <defs>
+    <radialGradient id="tile" cx="50%" cy="36%" r="78%">
+      <stop offset="0%" stop-color="#1a1327"/>
+      <stop offset="100%" stop-color="#090812"/>
+    </radialGradient>
+    <radialGradient id="ball" cx="38%" cy="32%" r="72%">
+      <stop offset="0%" stop-color="#fff6fb"/>
+      <stop offset="32%" stop-color="#ff69b9"/>
+      <stop offset="72%" stop-color="#ff2e97"/>
+      <stop offset="100%" stop-color="#a50f61"/>
+    </radialGradient>
+    <linearGradient id="shaft" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#241f38"/>
+      <stop offset="48%" stop-color="#7a74a0"/>
+      <stop offset="100%" stop-color="#241f38"/>
+    </linearGradient>
+    <radialGradient id="base" cx="50%" cy="36%" r="62%">
+      <stop offset="0%" stop-color="#2a2440"/>
+      <stop offset="100%" stop-color="#120e1e"/>
+    </radialGradient>
+    <filter id="glow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="3.1" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="1.5" y="1.5" width="61" height="61" rx="15" fill="url(#tile)" stroke="#2c2447" stroke-width="1.2"/>
+
+  <ellipse cx="32" cy="49.5" rx="15.5" ry="5.6" fill="url(#base)" stroke="#3a3358" stroke-width="0.8"/>
+  <ellipse cx="32" cy="48" rx="9" ry="3" fill="#0c0a15"/>
+
+  <rect x="28.4" y="23" width="7.2" height="25" rx="3.6" fill="url(#shaft)"/>
+
+  <g filter="url(#glow)">
+    <circle cx="32" cy="21" r="12" fill="url(#ball)"/>
+  </g>
+  <ellipse cx="27.8" cy="16.2" rx="4.1" ry="2.6" fill="#ffffff" opacity="0.55"/>
+</svg>
