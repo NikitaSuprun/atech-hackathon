@@ -13,6 +13,7 @@
 #include "overlay.h"
 #include "settings.h"
 #include "settings_view.h"
+#include "ui_audio.h"
 
 // Brain OS — the on-device shell. It owns the fixed-rate loop, the one framebuffer
 // every app draws into, the active theme, master volume, brightness, and the app
@@ -37,7 +38,7 @@ public:
     BrainOS(GameRegistry& reg, console::ThemeManager& themes, console::Audio* audio,
             SettingsStore& store, FrameSink* sink = nullptr)
         : reg_(reg), themes_(themes), audio_(audio), store_(store), sink_(sink),
-          canvas_(buf_, console::SCREEN_W, console::SCREEN_H) {}
+          sfx_(audio), canvas_(buf_, console::SCREEN_W, console::SCREEN_H) {}
 
     // Load persisted settings (or defaults), apply them, and land on the menu.
     void begin();
@@ -60,11 +61,13 @@ public:
     Mode                   mode() const { return mode_; }
     const console::Theme&  theme() const { return themes_.active(); }
     console::ThemeManager& themes() { return themes_; }
+    const console::ThemeManager& themes() const { return themes_; }
     const GameRegistry&    registry() const { return reg_; }
     const Settings&        settings() const { return settings_; }
     console::Game*         activeGame() const { return game_; }
     int                    activeGameIndex() const { return gameIdx_; }  // -1 in menu
     bool                   overlayOpen() const { return ov_.open; }
+    int                    overlaySel() const { return ov_.sel; }
     int                    menuSel() const { return menu_.sel; }
     int                    settingsRow() const { return set_.row; }
 
@@ -83,6 +86,7 @@ private:
     console::Audio*        audio_;
     SettingsStore&         store_;
     FrameSink*             sink_;
+    UiAudio                sfx_;
 
     Settings        settings_;
     console::Color  buf_[console::SCREEN_PX] = {};

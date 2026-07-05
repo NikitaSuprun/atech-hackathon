@@ -22,6 +22,9 @@ enum class OverlayAction : uint8_t { None, Resume, Restart, Next, Exit };
 // Options in wheel order: RESUME, RESTART (re-init this game), NEXT (jump to the
 // next title without a menu round-trip), EXIT (back to the launcher).
 constexpr int kOverlayOpts = 4;
+// Wheel labels — the one source of truth, shared by the matrix overlay and the
+// TFT dashboard's pause card so the two renderers can never drift.
+constexpr const char* const kOverlayLabels[kOverlayOpts] = {"RESUME", "RESTART", "NEXT", "EXIT"};
 
 struct OverlayState {
     bool     open  = false;
@@ -79,9 +82,8 @@ inline void overlayDraw(const OverlayState& o, console::Canvas& c,
     c.vline(3, y0 + 2, 3, t.c(ROLE_ACCENT2));
 
     // Current choice marquee (one option shown at a time; scrolls if too wide).
-    static const char* const kOpts[kOverlayOpts] = {"RESUME", "RESTART", "NEXT", "EXIT"};
     uint8_t tglow = gfx::breathe(o.tMs, t.motion.blinkMs, 160, 255);
-    gfx::label(c, 9, kOpts[o.sel], gfx::dim(t.c(ROLE_INK), tglow), o.tMs);
+    gfx::label(c, 9, kOverlayLabels[o.sel], gfx::dim(t.c(ROLE_INK), tglow), o.tMs);
 
     // Four option pips at the panel foot (columns 1..4).
     gfx::pipsH(c, 1, y1 - 1, kOverlayOpts, o.sel, t.c(ROLE_ACCENT), t.c(ROLE_DIM), 1);

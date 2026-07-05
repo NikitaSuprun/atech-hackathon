@@ -75,6 +75,7 @@ public:
     const Theme& active() const { return themes_[idx_]; }
     uint8_t index() const { return idx_; }
     uint8_t count() const { return count_; }
+    const Theme& at(uint8_t i) const { return themes_[i < count_ ? i : 0]; }
 
     void setActive(uint8_t i) {
         if (i < count_) idx_ = i;

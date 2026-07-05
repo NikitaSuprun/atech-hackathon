@@ -63,12 +63,19 @@ void BrainOS::pump(uint32_t nowMs, const Input& in) {
 void BrainOS::updateActive(const Input& in, uint32_t dtMs) {
     switch (mode_) {
         case Mode::Menu: {
-            MenuAction a = menuUpdate(menu_, reg_.count(), in, dtMs);
+            int        prevSel = menu_.sel;
+            MenuAction a       = menuUpdate(menu_, reg_.count(), in, dtMs);
             if (a == MenuAction::Launch) {
+                sfx_.select();
                 launch(menu_.sel);
             } else if (a == MenuAction::OpenSettings) {
+                sfx_.openSettings();
                 mode_ = Mode::Settings;
                 set_  = SettingsState{};
+            } else if (menu_.sel != prevSel) {
+                sfx_.navTick();
+            } else {
+                sfx_.idle(menu_.sinceMov);
             }
             break;
         }
@@ -78,6 +85,7 @@ void BrainOS::updateActive(const Input& in, uint32_t dtMs) {
             if (a == SettingsAction::Back) {
                 settings_.themeIndex = themes_.index();
                 store_.save(settings_);
+                sfx_.back();
                 mode_ = Mode::Menu;
             }
             break;
@@ -178,6 +186,7 @@ void BrainOS::exitToMenu() {
     game_    = nullptr;
     gameIdx_ = -1;
     ov_.reset();
+    sfx_.back();
     mode_ = Mode::Menu;
 }
 
