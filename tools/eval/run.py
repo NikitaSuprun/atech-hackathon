@@ -357,6 +357,18 @@ def main() -> None:
     manifest["manifest_path"] = str(manifest_path)
     print_summary(manifest)
 
+    # Make eval a real CI gate: exit non-zero on any visual regression or render
+    # error. --update-baseline (re)writes baselines, so it never fails here.
+    if not args.update_baseline:
+        bad: list[str] = []
+        for name, e in entries.items():
+            ent: dict[str, object] = e  # type: ignore[assignment]
+            reg: dict[str, object] = ent.get("regression") or {}  # type: ignore[assignment]
+            if ent.get("status") != "ok" or reg.get("status") == "changed":
+                bad.append(name)
+        if bad:
+            raise SystemExit(f"\nFAIL: visual regression in: {', '.join(bad)}")
+
 
 if __name__ == "__main__":
     main()
