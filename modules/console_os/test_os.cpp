@@ -97,14 +97,15 @@ int main() {
     check(os.menuSel() == 0, "cursor starts on the first game");
     check(sink.frames >= 1, "OS emitted a frame");
 
-    // ---- launch the demo (cursor on index 0) ----
-    printf("menu -> launch demo\n");
+    // ---- launch the first menu game (cursor on index 0) ----
+    const char* firstGame = reg.at(0).name;
+    printf("menu -> launch %s\n", firstGame);
     g_s.setButton(0, true);
     step(os);  // knob0 press -> Launch
     check(os.mode() == Mode::Game, "press launches into Game mode");
     console::Game* g = os.activeGame();
     check(g != nullptr, "a game instance is active");
-    check(g && strcmp(g->meta().name, "demo") == 0, "the launched game is the demo");
+    check(g && strcmp(g->meta().name, firstGame) == 0, "the launched game is the first menu entry");
     g_s.setButton(0, false);
     step(os);
     for (int i = 0; i < 5; ++i) step(os);  // let it run a few ticks

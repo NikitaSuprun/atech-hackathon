@@ -6,7 +6,11 @@
 #   make clean
 
 CXX ?= g++
-INCLUDES = -I. -I../../include -I../../games/_sdk -I../../games/demo -I../../games/racing
+INCLUDES = -I. -I../../include -I../../games/_sdk \
+           -I../../games/eggcatch -I../../games/snake -I../../games/pong \
+           -I../../games/racing -I../../games/flappy -I../../games/doodlejump \
+           -I../../games/invaders -I../../games/jukebox -I../../games/ambient \
+           -I../../games/demo
 CXXFLAGS = -std=c++14 -O2 -Wall -Wextra -DCONSOLE_OS_HOST $(INCLUDES)
 
 # console::THEMES[] lives in the shared header set; compiled in (read-only), not modified.
@@ -14,7 +18,7 @@ THEMES_SRC = ../../include/console/themes.cpp
 
 SRC = test_os.cpp brain_os.cpp builtin_games.cpp $(THEMES_SRC)
 HDR = $(wildcard *.h) $(wildcard ../../include/console/*.h) \
-      $(wildcard ../../games/_sdk/*.h) ../../games/demo/demo.h ../../games/racing/racing.h
+      $(wildcard ../../games/_sdk/*.h) $(wildcard ../../games/*/*.h)
 
 BIN = os_test
 
