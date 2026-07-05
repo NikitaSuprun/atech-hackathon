@@ -1,165 +1,120 @@
-# PONG 🏓
+# Atech Arcade
 
-**Two-player Pong on a screen of 108 LEDs, played with click-in knobs — built in one day at the [atech.dev](https://atech.dev) hackathon.**
+**An extensible retro game *console* — and an ambient pixel display — built from stock
+[atech.dev](https://atech.dev) ESP32-S3 modules. No soldering.** Two boards click
+together: a **brain** (two rotary knobs + speaker + color TFT) runs an on-device OS and a
+library of games, and streams pixel frames to a **screen** (a 6×18 = 108-pixel NeoPixel
+matrix) that is a dumb, glowing renderer. When nobody's playing, the same matrix runs
+generative ambient scenes. Grew out of a two-player Pong; now it's a platform.
 
 <table>
   <tr>
     <td align="center" valign="top">
-      <img src="assets/pong.gif" width="230" alt="The LED screen playing a real match">
+      <img src="assets/pong.gif" width="220" alt="The real 108-pixel matrix rendering a live game">
     </td>
     <td align="center" valign="top">
-      <img src="assets/controller.gif" width="470" alt="The console: two knobs, a scoreboard screen, and a speaker">
+      <img src="assets/controller.gif" width="440" alt="The console: two click-in knobs, a color scoreboard, and a speaker">
     </td>
   </tr>
 </table>
 
-*The screen GIF is the real firmware engine playing itself.*
+*The left GIF is the real firmware engine rendering itself onto the 6×18 matrix.*
 
-## The build
+## The two gadgets
 
-Two little ESP32-S3 boards, no soldering, everything clicks together.
+- **The brain (console).** A 14-port Atech Motherboard with **two click-in rotary knobs**
+  (each with a push-button + a 12-LED ring), an **I2S speaker**, and a **160×80 ST7735
+  color TFT** scoreboard. It runs the OS + every game and draws to an abstract 6×18
+  `console::Canvas`.
+- **The screen (display).** A second Motherboard driving **twelve 3×3 "Light Grid"
+  NeoPixel tiles** = one **6×18, 108-pixel** RGB matrix. It knows nothing about games: it
+  decodes pixel frames off the link, eases them through a glow engine, and lights LEDs.
 
-**The screen.** One board carries 12 snap-in 3×3 LED tiles — that's a 6×18 pixel display — and runs the entire game on-board: physics, scoring, rendering, all of it.
+## The game menu
 
-**The console.** A second board is the players' station: two clickable rotary knobs (each wrapped in its own 12-LED ring), a 160×80 color scoreboard screen, and a speaker that plays jingles when things happen.
+Ten games register in the on-device menu, in this order (the OS adds a trailing
+**SETTINGS** row). Every game is one `console::Game` subclass under `games/<name>/`.
 
-All of it is modular atech.dev hardware — tiles, knobs, screen and speaker just click into ports on the boards. The hardest physical step of the whole project was pushing firmly.
+| # | Game | What it is | Players | Controls |
+|---|------|-----------|:---:|----------|
+| 1 | **eggcatch** | "Nu, pogodi!" flagship: 4 chutes, a wolf's basket, 3-penalty game-over | 1 | knob L = move basket left/right · knob R = up/down · press L/R = start Game A (3 chutes) / B (4) |
+| 2 | **snake** | Classic snake on a 6×18 field | 1 | knob L = relative turn (CW→right, CCW→left) · press = pause / restart |
+| 3 | **pong** | Two-knob local Pong with contact-point english | 2 | knob L = bottom paddle · knob R = top paddle · press = serve |
+| 4 | **racing** | Brick-Game vertical car-dodge; *you* own the scroll speed | 1 | knob L = steer lane, press = brake · knob R = throttle |
+| 5 | **flappy** | Gravity/flap through scrolling pipe gaps | 1 | either press = flap |
+| 6 | **doodlejump** | Auto-bounce climber with edge-wrap, springs, a shootable monster | 1 | knob L = steer (wraps), press = shoot |
+| 7 | **invaders** | 4×3 formation shooter that marches down and speeds up per wave | 1 | knob L = move ship, press = fire |
+| 8 | **jukebox** | Audio+lights showpiece: RTTTL song player + VU visualizer, and a note instrument | 1 | knob L = browse/play, press = play/stop · knob R press = instrument mode |
+| 9 | **ambient** | Zero-player "desk object": Life, fire, plasma, matrix rain, clock (auto-cycle) | 1 | knob L = pick effect, press = reseed |
+| 10 | **demo** | Smallest bouncing-ball reference game | 1 | knob L = horizontal dir, press = flip vertical |
 
-### What plugs in where
+*Only Pong is truly two-player; eggcatch, racing and jukebox use **both** knobs but are
+single-player. "Players" is each game's own `meta().players`.*
 
-<img src="assets/system-diagram.png" alt="Full-system hardware diagram: screen board with 12 Light Grid tiles (6 direct, 6 rotated and cabled), laptop USB bridge, console board with two knobs, speaker and scoreboard" width="100%">
+## Quick start (no hardware)
 
-*Half the screen's tiles click straight into ports 1–6; the other six are rotated 180°, mounted flush beside them, and cabled back to ports 7–14 — that's what makes twelve 3×3 tiles read as one 6×18 screen. The laptop in the middle is the USB serial bridge between the boards. Component renders by [atech.dev](https://atech.dev).*
-
-## How to play
-
-**Both players hold their knobs in for half a second.** That's the start button — and it's also how play resumes after *every* point, so nobody ever gets ambushed by a serve while reaching for their drink. Your knob's LED ring fills up as you hold; when both players lock in, the countdown starts.
-
-Then it's Pong, but with opinions:
-
-- **First to 3** wins the match.
-- **Twist your knob** to move your paddle along the short edge of the screen.
-- **Hit with the paddle's edge** to put english on the ball and send it off at a sharp angle. That's the skill move.
-- **Every hit speeds the ball up.** Rallies escalate. Panic is part of the design.
-- Your knob ring doubles as your **score dial** during play, the speaker celebrates every point and the win, and the scoreboard tracks the whole match.
-
-Won? Both players hold again for an instant rematch.
-
-## How it works
-
-Two boards, one pluggable link between them:
-
-```mermaid
-flowchart LR
-    subgraph Console["Console board"]
-        K["Two click-in knobs"]
-        P["Scoreboard + speaker + knob rings"]
-    end
-    subgraph Link["Pluggable link"]
-        B["USB bridge through a laptop today — WiFi hotspot mode built in"]
-    end
-    subgraph Screen["Screen board"]
-        E["Authoritative game engine"]
-        F["6x18 framebuffer"]
-        C["Per-tile compositor"]
-        T["12 snap-in LED tiles"]
-    end
-    K -->|"knob positions + buttons"| B
-    B --> E
-    E --> F
-    F --> C
-    C --> T
-    E -->|"game events"| B
-    B --> P
-```
-
-The screen board is the referee: it owns the ball, the paddles and the score. The console is eyes, ears and hands — it streams what the players are doing and turns the screen's answers into sound, light and numbers.
-
-A match moves through a small state machine on the screen:
-
-```mermaid
-stateDiagram-v2
-    [*] --> LINK_WAIT
-    LINK_WAIT --> READY_CHECK: console linked
-    READY_CHECK --> COUNTDOWN: both players hold half a second
-    COUNTDOWN --> PLAYING: serve
-    PLAYING --> POINT_FLASH: goal
-    POINT_FLASH --> READY_CHECK: next point
-    POINT_FLASH --> GAME_OVER: someone reaches 3
-    GAME_OVER --> COUNTDOWN: both hold for rematch
-```
-
-And here's the heartbeat of a single point:
-
-```mermaid
-sequenceDiagram
-    participant C as Console
-    participant W as Screen engine
-    loop 50 times per second
-        C->>W: absolute knob positions + button-held bits
-        W->>W: physics tick
-        W->>W: framebuffer out to the LED tiles
-    end
-    loop 20 times per second
-        W->>C: state + scores + event counters
-        C->>C: fire each sound, score and ring effect exactly once
-    end
-```
-
-### Why it never desyncs
-
-The link is allowed to be flaky, because the protocol doesn't care:
-
-- **Knob positions travel as absolute values**, not deltas — a lost packet changes nothing, the next one carries the full truth.
-- **One-shot events are numbered.** The console fires a jingle when a counter ticks up, so a duplicated packet can't replay a sound and a gap can't skip one.
-- **The screen is the single source of truth.** The console never guesses at game state; it just renders whatever the screen last said.
-
-### The same engine runs everywhere
-
-The game logic is dependency-free C++ — no hardware headers, no framework. The exact same files compile into the ESP32 firmware *and* into a terminal simulator, which is how the paddle feel, ball speeds and spin angles got tuned before a single LED existed. It's also why the hero GIF above could be rendered straight from the real engine.
-
-## Hackathon war stories
-
-**The board swap.** Two physically identical boards, and at some point each got flashed with the other's firmware. Nothing crashed — instead, the pins meant to drive the scoreboard screen sprayed electrical garbage at an LED tile, which lit up in mysterious green pixels. Debugging a display bug that was actually an identity crisis: highly recommended.
-
-**"Cyan was right."** The LED tiles were mounted rotated, and inside each tile the pixels snake back and forth in serpentine order. Rather than reason it out, we flashed a test pattern that cycles through all 8 candidate orientation mappings, each labeled with its own color, and just looked at the screen. The entire calibration fix was the sentence "cyan was right".
-
-**The great transport swap.** A hall full of identical ESP32 kits is a war zone at 2.4 GHz. We renamed our too-generically-named hotspot, then fixed the ESP32's modem power-save silently eating screen-to-console packets — and when the venue RF *still* wouldn't behave, we swapped the entire transport for a USB serial bridge through a laptop in about 20 minutes. That was only possible because the link had lived behind a tiny interface since day one. The wireless mode still ships in the code, waiting for a quieter room.
-
-**The dark screen.** Mid-debug, the whole screen went black. Cue frantic scrolling through recent changes, growing dread, existential firmware doubt. It was a loose connector.
-
-**A moment of silence for `pong`.** The game instance was named `pong`. So was `namespace pong`. C++ had feelings about this. The instance is called `game` now, and we don't talk about it.
-
-## Run it
-
-With the hardware (find your two boards first with `uv run atech ports`):
+Everything runs on the desktop — the games are dependency-free C++14 and compile for the
+host unchanged.
 
 ```bash
-# flash the screen
-uv run atech build screen && uv run atech upload screen
+# Play any game in an interactive ANSI-truecolor terminal (6×18):
+make -C sim gamerun GAME=snake
+#   a/d = left knob   j/l = right knob   s/k = buttons   t = theme   r = reset   q = quit
 
-# flash the console
-uv run atech build controller && uv run atech upload controller
+# The determinism CI gate for a game (runs it twice, asserts bit-identical):
+make -C sim gameselftest GAME=eggcatch
 
-# connect them through your laptop
-.venv/bin/python -u tools/serial_bridge.py <controller-port> <screen-port>
+# The module test suites:
+make -C modules/console_os     test    # OS: loop, menu, theme switch, settings persistence
+make -C modules/screen_render  test    # dumb renderer: glow engine + compositor mapping
+make -C modules/link           test    # frame encode → COBS → decode round-trip
+make -C modules/console_e2e    test    # end-to-end: brain → wire → screen reproduces the frame
+
+# Aesthetic eval + visual-regression render (glowing PNG/GIF per game, no hardware):
+PYTHONPATH=tools uv run --group dev python tools/eval/run.py
+
+# PC mirror over Web-Serial (Chrome/Edge; "Mock" mode needs no board):
+open host/dashboard/index.html
 ```
 
-No hardware? Play the exact same engine in your terminal:
+Valid `GAME=` values: `pong snake eggcatch racing flappy doodlejump invaders jukebox ambient demo`.
 
-```bash
-make -C sim && ./sim/pong_sim
+## Architecture at a glance
+
+Ports-and-adapters. Games draw only to a `Canvas` using **theme tokens** (never hex, never
+LED wiring). The brain composes a frame and ships pixels; the screen just glows.
+
+```
+        BRAIN board (owns logic)                         SCREEN board (dumb renderer)
+ ┌───────────────────────────────────┐            ┌────────────────────────────────────┐
+ │ BrainOS   fixed 50 Hz loop         │            │ ScreenRenderBoard                  │
+ │  menu · settings · active game     │            │  drain link → frameDecodeInto      │
+ │  draws → Canvas 6×18  Color[108]   │            │  → persistent logical canvas       │
+ │  + active Theme + LightProfile     │            │ ScreenRenderer                     │
+ │                                    │  COBS-     │  LightEngine  (decay + bloom)      │
+ │ LinkFrameSink                      │  framed    │  Compositor   (serpentine + rot)   │
+ │  frameEncode → MSG_FRAME (RGB565,  │  frames    │  → 12 × NeoTile (WS2812)           │
+ │   full or dirty-rect)              │ ─────────► │  → 6×18 = 108-px matrix @ 20% cap   │
+ │  MSG_SET_LIGHT_PROFILE on restyle  │ (PongLink) │                                    │
+ └───────────────────────────────────┘            └────────────────────────────────────┘
+   2 knobs · speaker · 160×80 TFT                    108 NeoPixels (12 snap-in 3×3 tiles)
 ```
 
-Controls are shown in-app.
+Games are **deterministic** (all randomness from `ctx.rngSeed`, all motion from `dtMs`,
+`init()` is a full reset), so a fixed-seed replay is bit-for-bit identical — that is the CI
+gate. A theme is a design-token bundle that restyles the whole console (menu, every game,
+knob rings, TFT, and the glow itself) at runtime.
 
-## Credits
+## Docs
 
-Built by:
+| Doc | What's inside |
+|-----|---------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Contracts, the frame path, the light engine, the design-token system, determinism, and the design decisions + rationale |
+| [docs/GAMES.md](docs/GAMES.md) | Every game (mechanics + controls) and a **"how to add a game"** recipe |
+| [docs/THEMES.md](docs/THEMES.md) | The 5 themes, the token taxonomy, and **"how to add a theme"** |
+| [docs/HARDWARE.md](docs/HARDWARE.md) | The two boards, pin map, flash flow, power/brownout, and the board-to-board link |
+| [docs/HANDOVER.md](docs/HANDOVER.md) | Developer onboarding: repo layout, build/test/run, key modules, invariants, gotchas |
+| [docs/STATE.md](docs/STATE.md) | Current state: what's verified, what's on hardware, what's roadmap |
 
-- [Nikita Suprun](https://github.com/NikitaSuprun)
-- [Frederik Spang](https://github.com/Kafresma90)
-- [Felix Meli](https://github.com/felnx)
-- [Anton Wärnberg](https://github.com/BlueSnowman112)
-
-Made at the **atech.dev hackathon**, on atech boards and the atech SDK. Game design, firmware, calibration — and this page — all produced during the event. 🎉
+Product/business framing lives in [`gtm/`](gtm/README.md). Built on atech boards and the
+atech SDK. **Powered by Atech.**

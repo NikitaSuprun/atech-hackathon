@@ -1,87 +1,98 @@
-# HANDOVER — Atech Pong (two-board WiFi Pong)
+# Developer Handover
 
-> Last updated 2026-07-04 (hackathon day). **Status: plan finalized & approved; no game code written yet.**
-> Full design: [PLAN.md](PLAN.md). Read this file first; it's everything you need to start or resume work without re-exploring.
+Onboarding for the **Atech Arcade** platform — an extensible ESP32-S3 game console (a
+"brain" board that runs the OS + games and streams pixel frames to a dumb, glowing 6×18
+"screen" board). Read [ARCHITECTURE.md](ARCHITECTURE.md) for the *why*; this file is the
+*how*. Grew out of the two-player Pong that still lives under `modules/pong_*`.
 
-## What we're building
+> The repo-root `HANDOVER.md` is the program-level, multi-stage handover (what's done, what
+> remains). This file is the code-level onboarding.
 
-Two-player Pong on two **Atech 14-Port boards** (ESP32-S3):
+## Repo layout
 
-| Board | Modules (port) | Role |
-|---|---|---|
-| **Screen** | 12× `neopixel` Light Grid: ports 1-6 direct (**flipped 180°**) + 7,9,10,11,13,14 cabled (upright) → 6×18 px screen | Game engine (C++ state machine), WiFi **SoftAP** `atech-pong`, UDP server :47420 |
-| **Controller** | knob_p1 (1,2) · knob_p2 (9,10)¹ · speaker (4,5) · TFT 160×80 (13,14) · virtual `pong_control` (7) | WiFi STA, sends inputs 50 Hz, receives feedback 20 Hz → drives speaker jingles, TFT score, knob rings |
+| Path | What |
+|------|------|
+| `include/console/` | **The contracts.** Pure C++14, no Arduino/heap: `color · config · canvas · input · audio · theme · game · frame_proto · host_proto` + `themes.{h,cpp}`. The whole platform depends on these. |
+| `games/<name>/` | The 10 games — each a header-only `console::Game` + a 3-line `.cpp` that `REGISTER_GAME`s it. |
+| `games/_sdk/` | Shared game SDK: `sdk.h` (rng + font + `clampi`/`signi`), `rng.h`, `font3x5.h`, `registry.h` (`REGISTER_GAME`), `runner.h` (host `GameRunner`/`InputSampler`/`NullAudio`). |
+| `modules/console_os/` | **Brain OS**: `brain_os.*`, `menu.h`, `overlay.h`, `settings.h`, `settings_view.h`, `game_registry.h`, `frame_sink.h`, `builtin_games.cpp`, `os_gfx.h`. Host test: `test_os.cpp`. |
+| `modules/screen_render/` | **The dumb renderer**: `screen_render.h` (compositor glue), `light_engine.h` (glow), `neo_tile.h` (WS2812 sink), `screen_render_board.h` (transport glue). Host test: `test_console.cpp`. |
+| `modules/link/` | Transport adapters over the `PongLink` seam: `link_frame.h` (COBS de-framer + MTU), `link_cobs_serial.h` (primary), `link_frame_sink.h` (OS→wire), `link_loopback.h` (tests), `link_espnow.h` (stub). Host test: `test_link.cpp`. |
+| `modules/console_e2e/` | End-to-end test: real brain → wire → real screen. `test_e2e.cpp`. |
+| `modules/pong_screen/`, `modules/pong_control/` | The **original Pong** firmware. `screen_render` reuses its `Compositor` + `pong_config.h` (`TILE_MAP`, tile geometry). Still the code the `screen/`/`controller/` projects build today. |
+| `sim/` | Desktop host: `game_main.cpp` (interactive terminal / `--dump` / `--selftest` for any game) + `Makefile`. `pong_sim` is the legacy Pong sim. |
+| `tools/` | `serial_bridge.py` (board↔board USB relay), `eval/run.py` (aesthetic-eval + visual-regression), `gifgen/` (README asset renderers), `ci.sh`. |
+| `host/dashboard/` | Web-Serial PC mirror (`index.html`) — Chrome/Edge; a Mock mode needs no board. |
+| `screen/`, `controller/` | atech PlatformIO projects (`project.yaml` + generated `build/`, gitignored). |
+| `docs/`, `gtm/` | These docs; product/business framing. `docs/PLAN.md` is the original Pong spec (kept for history). |
 
-¹ User remembered "8,9" — impossible (port 8 = USB-C, reserved). Default (9,10); if wrong on hardware day it's one line in `controller/project.yaml` ([10,11] is the other valid option).
-
-**Rules locked with Nikita:** first to **3** · paddle 2 px, ball 1 px · paddles on the short (6-px) edges · **no standalone button** — to start, to continue after EVERY point, and to rematch, **both players hold their knob push-buttons 0.5 s** (server-timed) · music is state/event-driven · TFT shows the score.
-
-## Current state
-
-- Repo scaffolded (uv, python 3.11), `atech==1.0.0a3` in `.venv`. **No `modules/`, `screen/`, `controller/`, `sim/`, `tools/` yet** — next step is Phase 0 (freeze contract headers + yamls), then 7 parallel lanes (see PLAN.md §workstreams).
-- PlatformIO ESP32-S3 toolchain already cached in `~/.platformio`. **Adafruit NeoPixel/GFX/ST7735 download on the FIRST build → run `uv run atech build` for both projects once while on good WiFi.**
-- Plan approved incl. committing these docs.
-
-## Commands you'll actually use
+## Build / test / run (no hardware)
 
 ```bash
-cd /Users/nick/src/atech-hackathon
-uv run atech list-boards / list-modules        # catalog
-uv run atech validate screen                   # placement check (instant)
-uv run atech build screen                      # codegen + PlatformIO compile → screen/build/
-uv run atech upload screen --port /dev/cu.usbmodemXXX
-uv run atech ports                             # find board serial ports (plug one at a time, label!)
-uv run atech monitor --port ...                # live JSON events (knob detents/presses print for free)
-uv run atech check --port ...                  # reboot + module health + reset reason (BROWNOUT watch)
-uv run atech free-port --port ...              # kill whatever is holding a stuck serial port
-make -C sim && ./sim/pong_sim                  # desktop game sim (once built)
-tools/ci.sh                                    # validate+build both + sim + symlink checks
+# Any game, interactively (ANSI truecolor 6×18):
+make -C sim gamerun GAME=<pong|snake|eggcatch|racing|flappy|doodlejump|invaders|jukebox|ambient|demo>
+#   a/d = L knob   j/l = R knob   s/k = buttons   t = theme   r = reset   q = quit
+
+# Per-game determinism gate (twice-run diff):
+make -C sim gameselftest GAME=snake            # -> GAME SELFTEST OK
+
+# Module suites (each self-contained; run all four before a commit):
+make -C modules/console_os    test             # BRAIN OS TEST OK  (loop, menu, theme, settings)
+make -C modules/screen_render test             # CONSOLE TESTS OK  (glow + compositor + dirty cache)
+make -C modules/link          test             # LINK ADAPTER TEST OK (encode→COBS→decode)
+make -C modules/console_e2e   test             # E2E TEST OK       (brain→wire→screen mirror)
+
+# Aesthetic eval + visual regression (glowing PNG/GIF per game + a manifest; no LLM, no board):
+PYTHONPATH=tools uv run --group dev python tools/eval/run.py
+
+# PC mirror:
+open host/dashboard/index.html                  # Chrome/Edge; Web-Serial (Mock mode = no board)
 ```
 
-## The 8 gotchas (each cost us research — don't rediscover)
+For the on-hardware flash flow, board identification, power/brownout, and the link, see
+[HARDWARE.md](HARDWARE.md).
 
-1. **SDK has ZERO networking.** We hand-roll SoftAP + WiFiUDP inside our custom modules (`WiFi.h`/`WiFiUdp.h` are in the arduino-espressif32 core; no lib_deps needed).
-2. **User C++ can't add #includes** (`code:` blocks are spliced inside functions). ALL our code ships as two custom modules under `modules/` (`modules_path: ../modules` in project.yaml); files are copied **FLAT** (no subfolders!) into `lib/atech_<id>/` in the generated tree, and the declared header is auto-#included in main.cpp.
-3. **Bundled knob loop template eats `wasPressed()` edges** before our loop code runs → only ever read **levels**: `getPosition()`, `isPressed()`. (Bonus: those bundled templates print JSON events = free diagnostics in `atech monitor`.)
-4. **Knob acceleration is baked into `getPosition()` in the ISR** — can't be undone later → our setup template calls `setAcceleration(false, 1)` on both knobs. Non-negotiable for paddle feel.
-5. **Knob ring = one glowing dot** (`setRingPosition(float 0..12)`, NAN = re-follow knob), not an addressable ring. Choreography = (color, brightness, dot position) motions only.
-6. **`atech send` / module actions are DEAD in this alpha** (codegen generates no serial dispatcher). Don't build anything on it; all runtime control is our UDP.
-7. **All 12 screen ports are grids** → no spare slot for a virtual engine module → `pong_screen` module IS the 12th grid (its template instantiates `NeoPixelGrid {{instance}}_grid` on port 14 AND the engine; engine gets pointers to all 12).
-8. **Never hand-wire pins.** Codegen resolves size-2 modules' pin order incl. the left-column 180° swap automatically.
+## Key modules (what to read first)
 
-Where verified: SDK source at `.venv/lib/python3.11/site-packages/atech/` — `codegen.py` (main.cpp template), `project.py` (Project/catalog merge — same-id external module OVERRIDES bundled = our neopixel patch path), `placement.py` (validation rules), `catalog/loader.py` (flat copy, follows symlinks), `catalog/data/boards/14port.yaml` (ports/GPIOs/pairs/reserved 8+12), `catalog/data/modules/{neopixel,rotary_encoder,speaker,st7735_tft}/` (driver APIs + templates). Web: atech.dev/docs + PyPI README confirm no board-to-board API exists.
+1. `include/console/game.h` + `canvas.h` + `theme.h` — the surface every game codes against.
+2. `games/demo/demo.h` — the smallest complete game; copy it to start a new one.
+3. `modules/console_os/brain_os.h` — the loop, framebuffer, lifecycle, and the `FrameSink` seam.
+4. `include/console/frame_proto.h` — the entire brain→screen wire protocol in one header.
+5. `modules/screen_render/screen_render.h` + `light_engine.h` — how pixels become glow.
+6. `modules/console_e2e/test_e2e.cpp` — the clearest tour of the full path, end to end.
 
-## Architecture in 10 lines
+## Design invariants (don't break these)
 
-- Screen board is authoritative: pure-C++ `pong::Engine` (no Arduino deps — same files compile in the desktop sim), states `LINK_WAIT → READY_CHECK → COUNTDOWN → PLAYING → POINT_FLASH → (READY_CHECK | GAME_OVER)`.
-- Controller sends 24-B INPUT @50 Hz: **absolute** knob int32s + button **held bits** + seq + uptimeMs. Server applies **clamped deltas** (no drift, no dead-knob at walls; reboot detected via uptime regression).
-- Screen sends 24-B FEEDBACK @20 Hz: state, scores, readyProgress[2], and **wrapping u8 event counters** (paddleHit, goal+goalBy, win+winner, serve+servingPlayer). Controller's `FeedbackTracker` latches counters → each jingle/flash/redraw fires **exactly once** despite UDP loss/dup; after reconnect it adopts counters **without firing** (no jingle replay).
-- Three controller presenters consume (snapshot, Cues): **AudioDirector** (speaker motifs/RTTTL — table in PLAN.md), **ScoreDisplay** (TFT, redraw only on quantized state change — full display() costs ~6-10 ms), **RingFX** (hold-progress dot sweep, score dial, goal flash/spin).
-- WiFi hygiene both sides: `WiFi.persistent(false)`, `WiFi.setSleep(false)`, nothing blocks loop() ever (watchdog).
-- `PongLink` (begin/poll/sendRaw/recvRaw/isUp) isolates transport → ESP-NOW is a 2-file swap if venue WiFi is hostile (same packets). UDP primary because a laptop can join the SoftAP and run `tools/fake_controller.py` = test the whole game with no controller board.
+- **Games draw only via `Canvas` + theme tokens.** No hex literals, no LED/serpentine/panel
+  knowledge, no direct hardware. `t.c(ROLE_*)`, `t.cat[i]`, `t.ramp[i]` only.
+- **Determinism.** All randomness from `ctx.rngSeed` (a seeded `sdk::Rng`), all motion from
+  `dtMs` (never wall-clock), and `init()` is a full reset. Fixed seed ⇒ bit-identical replay;
+  the selftest enforces it.
+- **Contracts stay pure.** `include/console/*` and the sim-compiled headers are C++14,
+  `<stdint.h>`-only, no Arduino, no heap. They must compile for firmware, host, and WASM
+  unchanged.
+- **The screen is dumb.** It knows pixel frames + a light profile, nothing about games. Keep
+  game logic on the brain.
+- **Append, never insert, in the `Role` enum and `THEMES[]` layout** — `THEMES[]` is
+  positional, so an insert silently recolors every theme.
+- **One transport seam.** New links implement `PongLink`; nothing above it knows the wire.
+- **The registry is the menu.** Add a game with one `reg.add()` in `builtin_games.cpp`; never
+  hand-edit menu drawing.
 
-## Work lanes (parallel, zero file overlap — fan out to agents)
+## Gotchas
 
-0. **Contracts first (blocks all, ~1 h):** `pong_frame.h`, `pong_engine.h`, `pong_proto.h`, `pong_link.h`, `net_config.h`, `feedback_tracker.h` (Cues), both `project.yaml` + `module.yaml`.
-1. A: engine (`modules/pong_screen/pong_engine.cpp`) — with G's sim for tuning.
-2. B: screen glue (`pong_screen.*`, `link_udp_server.*`, `compositor.*`, identify/verify modes) — stub engine first so `atech build screen` is green day-0.
-3. C: controller core (`pong_control.*`, `link_udp_client.*`, tracker, symlinks) — presenter stubs so build is green day-0.
-4. D/E/F: audio_director / score_display / ring_fx — independent file-pair drop-ins.
-5. G: `sim/` + `tools/fake_controller.py` + `tools/ci.sh` + `.gitignore`.
-
-## Hardware-day checklist (in order — kills the biggest unknowns first)
-
-1. Flash **screen** → identify pattern (auto in LINK_WAIT before first link): each tile = solid hue + WHITE corner pixel (rotation: TL=0° TR=90° BR=180° BL=270°) + gray neighbor pixel (misread guard); white blinks tile-index+1 times. **This is also the RMT go/no-go for 24 strip objects** (12 tiles × 2 lines). Take ONE photo = the calibration record.
-2. Fill `TILE_MAP[12]` in `pong_config.h` (calibrated: ports 1-6 col 0 rot 180; ports 7,9,10,11,13,14 col 1 rot 0) → rebuild → verify glyph ("F" + arrow) → attract rally shows any residual error as a discontinuity.
-3. `uv run atech check` on screen → 13 modules ok (SoftAP proven via health check).
-4. Laptop joins `atech-pong` (pass `pong4242`) → `python tools/fake_controller.py` → play with keyboard: full server proven with zero controller hardware.
-5. Flash **controller** → TFT "SEARCHING" + red-blink rings immediately; `atech monitor` shows knob detents/presses (fixes knob-2 port if needed); `atech check` (speaker/TFT init).
-6. End-to-end match; then robustness (kill controller mid-rally → LINK_WAIT ≤1 s → resume via READY_CHECK; button spam does nothing outside the hold gate) and power (`atech check` reset reason ≠ BROWNOUT; solid 5V/2A+ per board).
-7. On-site tune: WiFi channel (least busy of 1/6/11 → `net_config.h`), `KNOB_SIGN`, `DETENTS_PER_CELL`, ball speeds, speaker volume (≤0.5), `WALL_BRIGHTNESS`.
-
-## Open items
-
-- [ ] Phase 0 contracts → then lanes A–G (fan out).
-- [ ] One full `atech build` of both projects on good WiFi (lib cache).
-- [ ] Hardware day: TILE_MAP truth, knob-2 pair, TFT `setRotation`, venue channel, volume/brightness taste.
-- [ ] Stretch (protocol-ready): 2nd controller board = `controllerId 1`, one knob, zero protocol change.
+- **Two boards, identical USB descriptors.** Re-identify by serial output, not port number,
+  and stop `serial_bridge.py` before any reflash (it holds both ports).
+- **`atech upload` reuses a stale `firmware.bin`** if you skip `atech build` — always build,
+  confirm the change synced into `build/lib/…`, then upload.
+- **20% brightness clamp is real.** The NeoPixel driver caps at 51/255, so anything below
+  ~25 quantizes to mud — keep palettes in the accent (saturated, bright) / dim (~70–90) tiers.
+- **`TICK_MS` is defined twice** — in `console::` (`config.h`) and the global pong scope
+  (`pong_config.h`). Qualify it (`console::TICK_MS`) in code that includes both (the E2E test
+  does). De-duping the two Pong-era `Color`/`TICK_MS` overlaps is a known cleanup item.
+- **`screen/` and `controller/` still build the old Pong.** The `console_os` + `screen_render`
+  firmware is host/sim/E2E-verified but not yet wired into a board project — that's the
+  Integration stage (needs hardware for the flash). See [STATE.md](STATE.md).
+- **Conventions:** comments minimal and on the line above (not inline); Python is a real
+  package (`PYTHONPATH=tools`, absolute imports, parametrized `Final[X]`, no `sys.path`
+  hacks); small self-contained commits, no AI co-author trailer.
