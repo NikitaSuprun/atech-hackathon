@@ -8,9 +8,10 @@
 #include "neo_tile.h"
 #include "screen_render_board.h"
 
-// Tile data lines in TILE_MAP / compositor order (pin_a of each screen port).
-static NeoTile t0(9), t1(5), t2(17), t3(16), t4(11), t5(13), t6(6), t7(40), t8(1),
-    t9(43), t10(39), t11(36);
+// Tile data lines in TILE_MAP / compositor order — line B / pin_b of each screen
+// port (these panels are the SK6812/RGBW revision, wired to line B, not line A).
+static NeoTile t0(8), t1(4), t2(18), t3(15), t4(10), t5(12), t6(7), t7(41), t8(2),
+    t9(44), t10(38), t11(35);
 
 // NB: named g_link (not `link`) — POSIX declares a global `int link(const char*,
 // const char*)` that would otherwise shadow-collide in the ctor argument.

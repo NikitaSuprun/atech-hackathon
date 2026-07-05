@@ -3,11 +3,12 @@
 #include <Arduino.h>
 #include "screen_render.h"
 
-// Hardware TileSink: drives ONE WS2812 line per 3x3 tile (the live "line A").
-// The stock atech NeoPixelGrid drives BOTH line A (WS2812/RGB) and line B
-// (SK6812/RGBW) on every show(); line B is dead on this screen, so dropping it
-// halves the RMT work per tile (~2x refresh headroom). If a future panel is the
-// RGBW variant, point this at line B instead — one constructor argument.
+// Hardware TileSink for the SK6812 / RGBW panels, which are wired to each tile's
+// "line B" and driven as NEO_GRBW (white channel held at 0). Line A is
+// unpopulated on this revision, so we drive line B only: ONE show() per tile,
+// which keeps the full 50 Hz refresh headroom. (The stock driver drove line A;
+// on these panels that's a dead wire — the wall stayed dark. For a WS2812 /
+// line-A panel, point the pin at line A and switch NEO_GRBW -> NEO_GRB.)
 //
 // Chip index 0..8 is the compositor's serpentine chip order; brightness is
 // clamped to MAX_BRIGHTNESS (20%) exactly like the stock driver.
@@ -16,7 +17,7 @@ public:
     static const uint8_t NUM_LEDS = 9;
     static const uint8_t MAX_BRIGHTNESS = 51;
 
-    explicit NeoTile(int dataPin) : strip_(NUM_LEDS, dataPin, NEO_GRB + NEO_KHZ800) {}
+    explicit NeoTile(int dataPinB) : strip_(NUM_LEDS, dataPinB, NEO_GRBW + NEO_KHZ800) {}
 
     void begin() {
         strip_.begin();
@@ -26,7 +27,7 @@ public:
     }
 
     void setPixel(int chip, uint8_t r, uint8_t g, uint8_t b) override {
-        if (chip >= 0 && chip < NUM_LEDS) strip_.setPixelColor(chip, r, g, b);
+        if (chip >= 0 && chip < NUM_LEDS) strip_.setPixelColor(chip, strip_.Color(r, g, b, 0));
     }
     void show() override { strip_.show(); }
     void setBrightness(uint8_t b) override {
